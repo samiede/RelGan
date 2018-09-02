@@ -1,0 +1,7 @@
+.idea/
+.DS_Store
+__pycache__/
+cluster
+output_non_conv/
+runs/
+dataset/
