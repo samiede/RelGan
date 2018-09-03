@@ -77,7 +77,6 @@ class FirstConvolution(nn.Conv2d):
         return output
 
     def relprop(self, R):
-
         iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
         iself.load_state_dict(self.state_dict())
         iself.bias.data *= 0
@@ -108,8 +107,6 @@ class FirstConvolution(nn.Conv2d):
         nself_b = torch.autograd.grad(nself_f, H, S)[0]
 
         R = X * iself_b - L * pself_b - H * nself_b
-        print('First Convolution Relevance Zero: ', R.sum().item() == 0)
-
         return R.detach()
 
 
@@ -151,7 +148,7 @@ class ReLu(nn.ReLU):
     def forward(self, input):
         output = super().forward(input)
         # print('Relu output zero: ', output.sum().item() == 0)
-        if(output.sum().item() == 0):
+        if (output.sum().item() == 0):
             print('Relu input', input),
             print('Output', output)
         return super().forward(input)
@@ -177,35 +174,37 @@ class Pooling(nn.AvgPool2d):
         R = self.X * C
         return R
 
+
 class BatchNorm2d(nn.BatchNorm2d):
 
-        def __init__(self, num_features):
-            super().__init__(num_features)
-            self.factor = None
+    def __init__(self, num_features):
+        super().__init__(num_features)
+        self.factor = None
 
-        def forward(self, input):
-            X = input
-            output = super().forward(input)
-            self.factor = torch.div(output, X)
-            self.factor.detach()
-            recovered_x = torch.div(output, self.factor)
-            print('recovered: ', X.sum().item() == recovered_x.sum().item(), self)
-            print(self.factor)
-            return output
+    def forward(self, input):
+        X = input
+        output = super().forward(input)
+        self.factor = torch.div(output, X)
+        self.factor.detach()
+        recovered_x = torch.div(output, self.factor)
+        # print('recovered: ', X.sum().item() == recovered_x.sum().item(), self)
+        # print(self.factor)
+        return output
 
-        def relprop(self, R):
-            return torch.div(R, self.factor)
+    def relprop(self, R):
+        return torch.div(R, self.factor)
+        return R
 
-        def recover(self, input):
-            print('input: ', input.shape)
-            print( 'bias:', self.bias.shape)
-            print('weight', self.weight.shape)
-            print('var', self.running_var.shape)
-            denom = input - self.bias
-            # shift = torch.div(input - self.bias, self.weight)
-            # factor = torch.sqrt(self.running_var + self.eps)
-            # addendum = self.running_mean
-            # return shift * factor + addendum
+    def recover(self, input):
+        print('input: ', input.shape)
+        print('bias:', self.bias.shape)
+        print('weight', self.weight.shape)
+        print('var', self.running_var.shape)
+        denom = input - self.bias
+        # shift = torch.div(input - self.bias, self.weight)
+        # factor = torch.sqrt(self.running_var + self.eps)
+        # addendum = self.running_mean
+        # return shift * factor + addendum
 
 
 class Dropout(nn.Dropout):
@@ -237,15 +236,17 @@ class RelevanceNet(nn.Sequential):
             # save output of second-to-last layer to use in relevance propagation
             if idx == len(self) - 2:
                 self.relevanceOutput = input
+                if input.size()[0] == 1:
+                    print('Relevance Output', self.relevanceOutput)
 
         return input
 
     def relprop(self, R):
+        #print(R)
         # For all layers except the last
         for layer in self[-2::-1]:
             R = layer.relprop(R)
         return R
-
 
 
 class Layer(nn.Sequential):

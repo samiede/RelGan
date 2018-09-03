@@ -11,6 +11,7 @@ from ModuleRedefinitions import RelevanceNet, Layer, FirstLinear, NextLinear, La
 gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 torch.set_default_dtype(torch.float32)
 
+print(gpu)
 
 def load_mnist_data():
     transform = transforms.Compose(

@@ -183,7 +183,6 @@ def graymap(x):
 def visualize(x, colormap):
     N = len(x)
     assert (N <= 16)
-
     x = colormap(x / np.abs(x).max())
 
     # Create a mosaic and upsample
