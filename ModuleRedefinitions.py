@@ -55,6 +55,7 @@ class NextLinear(nn.Linear):
 class LastLinear(NextLinear):
 
     def forward(self, input):
+        print('Outpot', input.shape)
         input = torch.reshape(input, (input.size(0), input.size(1) * input.size(2) * input.size(3)))
         self.X = input
         return super().forward(input)
@@ -192,7 +193,7 @@ class BatchNorm2d(nn.BatchNorm2d):
         return output
 
     def relprop(self, R):
-        return torch.div(R, self.factor)
+        # return torch.div(R, self.factor)
         return R
 
     def recover(self, input):

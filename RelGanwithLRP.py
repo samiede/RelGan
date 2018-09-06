@@ -73,25 +73,24 @@ class DiscriminatorNet(nn.Module):
         super(DiscriminatorNet, self).__init__()
 
         n_out = 1
-
         self.net = RelevanceNet(
             Layer(  # Input Layer
                 FirstConvolution(1, d, 4, stride=2, padding=1),
-                PropReLu(),
                 BatchNorm2d(d),
+                PropReLu(),
             ),
             Layer(
                 NextConvolution(d, 2 * d, 4, stride=2, padding=1),
-                PropReLu(),
                 BatchNorm2d(2 * d),
+                PropReLu(),
             ),
             Layer(
                 NextConvolution(2 * d, 4 * d, 4, stride=2, padding=1),
-                PropReLu(),
                 BatchNorm2d(4 * d),
+                PropReLu(),
             ),
             Layer(
-                NextConvolution(4 * d, 1, 4, stride=1, padding=0),
+                NextConvolution(4 * d, 1, 4, stride=2, padding=1),
                 PropReLu(),
             ),
             Layer(  # Output Layer
@@ -99,6 +98,7 @@ class DiscriminatorNet(nn.Module):
                 nn.Sigmoid()
             )
         )
+
 
 
         self.optimizer = optim.Adam(self.parameters(), lr=0.0002)
