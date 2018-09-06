@@ -52,13 +52,12 @@ class NextLinear(nn.Linear):
         return R
 
 
-class LastLinear(NextLinear):
+class FlattenLayer(nn.Module):
 
     def forward(self, input):
-        print('Outpot', input.shape)
-        input = torch.reshape(input, (input.size(0), input.size(1) * input.size(2) * input.size(3)))
-        self.X = input
-        return super().forward(input)
+        input = input.view(input.size(0), 1)
+        print(input.shape)
+        return input
 
 
 class FirstConvolution(nn.Conv2d):
@@ -243,7 +242,7 @@ class RelevanceNet(nn.Sequential):
         return input
 
     def relprop(self, R):
-        #print(R)
+        # print(R)
         # For all layers except the last
         for layer in self[-2::-1]:
             R = layer.relprop(R)

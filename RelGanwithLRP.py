@@ -3,7 +3,7 @@ from torch import nn, optim
 from torchvision import transforms, datasets
 import utils
 from utils import Logger
-from ModuleRedefinitions import RelevanceNet, Layer, FirstLinear, NextLinear, LastLinear, ReLu as PropReLu, \
+from ModuleRedefinitions import RelevanceNet, Layer, FirstLinear, NextLinear, FlattenLayer, ReLu as PropReLu, \
     NextConvolution, FirstConvolution, Pooling, Dropout, BatchNorm2d
 
 # CUDA everything
@@ -93,8 +93,12 @@ class DiscriminatorNet(nn.Module):
                 NextConvolution(4 * d, 1, 4, stride=2, padding=1),
                 PropReLu(),
             ),
+            Layer(
+                NextConvolution(1, 1, 4, stride=1, padding=0),
+                PropReLu(),
+            ),
             Layer(  # Output Layer
-                LastLinear(25, n_out),
+                FlattenLayer(),
                 nn.Sigmoid()
             )
         )
