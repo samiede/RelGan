@@ -55,9 +55,7 @@ class NextLinear(nn.Linear):
 class FlattenLayer(nn.Module):
 
     def forward(self, input):
-        input = input.view(input.size(0), 1)
-        print(input.shape)
-        return input
+        return input.view(-1, 1)
 
 
 class FirstConvolution(nn.Conv2d):
