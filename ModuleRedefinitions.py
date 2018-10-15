@@ -43,7 +43,7 @@ class NextLinear(nn.Linear):
         return super().forward(input)
 
     def relprop(self, R):
-        V = torch.max(torch.FloatTensor(1).zero_(), self.weight)
+        V = torch.max(torch.Tensor(1).zero_(), self.weight)
         Z = torch.matmul(self.X, torch.t(V)) + 1e-9
         S = R / Z
         C = torch.matmul(S, V)
@@ -81,12 +81,12 @@ class FirstConvolution(nn.Conv2d):
         nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
         nself.load_state_dict(self.state_dict())
         nself.bias.data *= 0
-        nself.weight.data = torch.min(torch.FloatTensor(1).zero_(), nself.weight)
+        nself.weight.data = torch.min(torch.Tensor(1).zero_(), nself.weight)
 
         pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
         pself.load_state_dict(self.state_dict())
         pself.bias.data *= 0
-        pself.weight.data = torch.max(torch.FloatTensor(1).zero_(), pself.weight)
+        pself.weight.data = torch.max(torch.Tensor(1).zero_(), pself.weight)
 
         X = self.X
         L = self.X * 0 + utils.lowest
@@ -128,7 +128,7 @@ class NextConvolution(nn.Conv2d):
         pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
         pself.load_state_dict(self.state_dict())
         pself.bias.data *= 0
-        pself.weight.data = torch.max(torch.FloatTensor(1).zero_(), pself.weight)
+        pself.weight.data = torch.max(torch.Tensor(1).zero_(), pself.weight)
         Z = pself(self.X) + 1e-9
         S = torch.div(R, Z)
         C = torch.autograd.grad(Z, self.X, S)[0]
