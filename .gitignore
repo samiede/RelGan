@@ -3,5 +3,6 @@
 __pycache__/
 cluster
 output_non_conv/
+output/
 runs/
 dataset/

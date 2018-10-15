@@ -4,6 +4,11 @@ import utils
 import copy
 
 
+gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+torch.set_default_dtype(torch.float32)
+
+
+
 class FirstLinear(nn.Linear):
 
     def __init__(self, in_features, out_features, bias=False):
@@ -185,11 +190,13 @@ class BatchNorm2d(nn.BatchNorm2d):
         self.factor = torch.div(output, X)
         self.factor.detach()
         recovered_x = torch.div(output, self.factor)
+        self.recover(input)
         # print('recovered: ', X.sum().item() == recovered_x.sum().item(), self)
         # print(self.factor)
         return output
 
     def relprop(self, R):
+        # self.recover(R)
         # return torch.div(R, self.factor)
         return R
 
@@ -197,12 +204,30 @@ class BatchNorm2d(nn.BatchNorm2d):
         print('input: ', input.shape)
         print('bias:', self.bias.shape)
         print('weight', self.weight.shape)
+        self.expand(self.weight, input.size)
         print('var', self.running_var.shape)
-        denom = input - self.bias
+        exit()
+        # denom = input - bias
         # shift = torch.div(input - self.bias, self.weight)
         # factor = torch.sqrt(self.running_var + self.eps)
         # addendum = self.running_mean
         # return shift * factor + addendum
+
+    def expand(self, input, shape):
+        expanded = torch.Tensor(shape(2), shape(3))
+        expanded.fill_(input[0].item())
+        torch.unsqueeze(expanded, 1)
+        print('Exp',expanded.shape)
+        for scalar in input[1:]:
+            fill = torch.Tensor(shape(2), shape(3))
+            fill.fill_(scalar.item())
+            print(fill.shape)
+            print('Fill', fill)
+            torch.unsqueeze(fill, 0)
+            expanded = torch.stack((expanded, fill), 0)
+            print('Expanded', expanded.shape)
+
+
 
 
 class Dropout(nn.Dropout):
