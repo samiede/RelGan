@@ -4,8 +4,10 @@ import errno
 import torchvision.utils as vutils
 from tensorboardX import SummaryWriter
 from IPython import display
-from matplotlib import pyplot as plt
 import torch
+from matplotlib import pyplot as plt
+if torch.cuda.is_available():
+    plt.switch_backend('agg')
 import PIL, PIL.Image
 
 '''
