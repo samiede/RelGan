@@ -46,7 +46,8 @@ class Logger:
         """
         input images are expected in format (NCHW)
         """
-        relevance = visualize(relevance.numpy(), heatmap)
+        relevance = visualize(relevance.cpu().numpy() if torch.cuda.is_available()
+                              else relevance.numpy(), heatmap)
 
         if type(images) == np.ndarray:
             images = torch.from_numpy(images)
