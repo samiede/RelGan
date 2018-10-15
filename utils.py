@@ -66,7 +66,7 @@ class Logger:
         if torch.cuda.is_available():
             images.cuda()
             relevance.cuda()
-        images = torch.cat((images, relevance))
+        images = torch.cat(images, relevance)
 
         # Make horizontal grid from image tensor
         horizontal_grid = vutils.make_grid(
