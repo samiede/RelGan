@@ -1,12 +1,6 @@
 import torch
 from torch import nn
 import utils
-import copy
-
-
-gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-torch.set_default_dtype(torch.float32)
-
 
 
 class FirstLinear(nn.Linear):

@@ -9,7 +9,10 @@ from ModuleRedefinitions import RelevanceNet, Layer, FirstLinear, NextLinear, Fl
 # CUDA everything
 
 gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-torch.set_default_dtype(torch.float32)
+if torch.cuda.is_available():
+    torch.set_default_dtype(torch.cuda.FloatTensor)
+else:
+    torch.set_default_dtype(torch.float32)
 
 print(gpu)
 
