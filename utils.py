@@ -90,6 +90,8 @@ class Logger:
 
         # Plot and save horizontal
         fig = plt.figure(figsize=(32, 16), facecolor='white')
+        if torch.cuda.is_available():
+            horizontal_grid = horizontal_grid.cpu()
         plt.imshow(np.moveaxis(horizontal_grid.numpy(), 0, -1))
         plt.axis('off')
         if plot_horizontal:
