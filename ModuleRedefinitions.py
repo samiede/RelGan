@@ -184,14 +184,14 @@ class BatchNorm2d(nn.BatchNorm2d):
         self.factor = torch.div(output, X)
         self.factor.detach()
         recovered_x = torch.div(output, self.factor)
-        self.recover(input)
+        # self.recover(input)
         # print('recovered: ', X.sum().item() == recovered_x.sum().item(), self)
         # print(self.factor)
         return output
 
     def relprop(self, R):
         # self.recover(R)
-        # return torch.div(R, self.factor)
+        return torch.div(R, self.factor)
         return R
 
     def recover(self, input):
