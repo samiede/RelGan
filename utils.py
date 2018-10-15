@@ -63,6 +63,8 @@ class Logger:
 
         # concat images
         images = images.repeat(1, 3, 1, 1)
+        if torch.cuda.is_available():
+            images.cuda()
         images = torch.cat((images, relevance))
 
         # Make horizontal grid from image tensor
