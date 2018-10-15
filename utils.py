@@ -66,7 +66,6 @@ class Logger:
         if torch.cuda.is_available():
             images = images.cuda()
             relevance = relevance.cuda()
-        print(type(images))
         images = torch.cat((images, relevance))
 
         # Make horizontal grid from image tensor
@@ -89,7 +88,8 @@ class Logger:
 
         # Plot and save horizontal
         fig = plt.figure(figsize=(32, 16), facecolor='white')
-        plt.imshow(np.moveaxis(horizontal_grid.numpy(), 0, -1))
+        if not torch.cuda.is_available():
+            plt.imshow(np.moveaxis(horizontal_grid.numpy(), 0, -1))
         plt.axis('off')
         if plot_horizontal:
             display.display(plt.gcf())
