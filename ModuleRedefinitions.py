@@ -262,8 +262,8 @@ class RelevanceNet(nn.Sequential):
             # save output of second-to-last layer to use in relevance propagation
             if idx == len(self) - 2:
                 self.relevanceOutput = input
-                if input.size()[0] == 1:
-                    print('Relevance Output', self.relevanceOutput)
+                # if input.size()[0] == 1:
+                #     print('Relevance Output', self.relevanceOutput)
 
         return input
 
