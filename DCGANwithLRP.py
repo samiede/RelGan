@@ -104,8 +104,6 @@ class DiscriminatorNet(nn.Module):
             )
         )
 
-
-
         self.optimizer = optim.Adam(self.parameters(), lr=0.0002)
 
     def forward(self, x):
@@ -248,7 +246,7 @@ loss = nn.BCELoss().to(gpu)
 
 num_test_samples = 1
 # We use this noise to create images during the run
-test_noise = noise(num_test_samples).detach()
+test_noise = noise(num_test_samples)
 
 # Training
 
@@ -266,8 +264,8 @@ for epoch in range(num_epochs):
         # Images for Discriminator
 
         # Create fake data and detach the Generator, so we don't compute the gradients here
-        z = noise(n)
-        fake_data = generator(z).detach()
+        z = noise(n).detach()
+        fake_data = generator(z)
         fake_data, real_batch = fake_data.to(gpu), real_batch.to(gpu)
 
         # Train Discriminator
