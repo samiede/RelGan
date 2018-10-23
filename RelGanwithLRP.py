@@ -129,12 +129,12 @@ class DiscriminatorNet(nn.Module):
 
         # 1.1 Train on real data
         prediction_real = self.forward(real_data)
-        error_real = loss(prediction_real, discriminator_target(N)).detach()
+        error_real = loss(prediction_real, discriminator_target(N))
         # error_real.backward()
 
         # 1.2 Train on fake data
         predictions_fake = self.forward(fake_data)
-        error_fake = loss(predictions_fake, generator_target(N)).detach()
+        error_fake = loss(predictions_fake, generator_target(N))
         # error_fake.backward()
 
         training_loss = loss(prediction_real - predictions_fake, discriminator_target(N))
@@ -210,6 +210,7 @@ class GeneratorNet(torch.nn.Module):
         optimizer.zero_grad()
 
         # Reshape for prediction
+        # noinspection PyUnresolvedReferences
         data_fake_d = torch.reshape(data_fake, (100, 1, 64, 64))
         # forward pass on discriminator with generated data
         prediction_fake = discriminator(data_fake)
@@ -247,7 +248,7 @@ generator.weight_init(0, 0.02)
 d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002)
 g_optimizer = optim.Adam(generator.parameters(), lr=0.0002)
 
-loss = nn.BCELoss().to(gpu)
+loss = nn.BCEWithLogitsLoss().to(gpu)
 
 num_test_samples = 1
 # We use this noise to create images during the run
