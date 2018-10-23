@@ -120,13 +120,6 @@ class DiscriminatorNet(nn.Module):
     def relprop(self, R):
         return self.net.relprop(R)
 
-    def weight_init(self, mean, std):
-        for m in self.net.modules():
-            # if isinstance(m, FirstConvolution) or isinstance(m, NextConvolution):
-            m.weight.data.normal_(mean, std)
-                # m.bias.data.fill_(0)
-
-
     def training_iteration(self, real_data, fake_data, optimizer):
         N = real_data.size(0)
 
@@ -167,29 +160,29 @@ class GeneratorNet(torch.nn.Module):
                 #                   Channel_in,     c_out, k, s, p
                 nn.ConvTranspose2d(input_features, d * 8, 4, 1, 0),
                 nn.BatchNorm2d(d*8),
-                nn.ReLU()
+                nn.LeakyReLU(0.2)
                 # state size = 100 x 1024 x 4 x 4
             ),
             Layer(
                 #                   C_in, c_out,k, s, p
                 nn.ConvTranspose2d(d * 8, d * 4, 4, 2, 1),
                 nn.BatchNorm2d(d * 4),
-                nn.ReLU()
+                nn.LeakyReLU(0.2)
                 # state size = 100 x 512 x 8 x 8
             ),
             Layer(
                 #                C_in, c_out,k, s, p
                 nn.ConvTranspose2d(d * 4, d * 2, 4, 2, 1),
                 nn.BatchNorm2d(d * 2),
-                nn.ReLU()
+                nn.LeakyReLU(0.2)
                 # state size = 100 x 256 x 16 x 16
             ),
             Layer(
                 #                C_in, c_out,k, s, p
                 nn.ConvTranspose2d(d * 2, d, 4, 2, 1),
                 nn.BatchNorm2d(d),
-                nn.ReLU()
-            ),
+                nn.LeakyReLU(0.2)
+                ),
             Layer(
                 #               C_in, c_out,k, s, p
                 nn.ConvTranspose2d(d, 1, 4, 2, 1),
@@ -199,13 +192,6 @@ class GeneratorNet(torch.nn.Module):
 
     def forward(self, x):
         return self.main(x)
-
-    def weight_init(self, mean, std):
-        for m in self.modules():
-            # if isinstance(m, nn.ConvTranspose2d):
-            m.weight.data.normal_(mean, std)
-            m.bias.data.fill_(0)
-
 
 
     @staticmethod
