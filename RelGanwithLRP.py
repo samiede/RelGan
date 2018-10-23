@@ -247,7 +247,7 @@ generator.weight_init(0, 0.02)
 d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002)
 g_optimizer = optim.Adam(generator.parameters(), lr=0.0002)
 
-loss = nn.BCEWithLogitsLoss().to(gpu)
+loss = nn.BCELoss().to(gpu)
 
 num_test_samples = 1
 # We use this noise to create images during the run
