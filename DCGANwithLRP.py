@@ -70,8 +70,8 @@ def generator_target(size):
 
 def weight_init(m):
     if type(m) == FirstConvolution or type(m) == NextConvolution or type(m) == BatchNorm2d or type(m) == nn.ConvTranspose2d:
-        m.weight.data.normal_(0, 0.2)
-        m.bias.data.fill_(0)
+        m.weight.data.normal_(0, 0.02)
+        m.bias.data.zero_()
 
 
 # Network Definitions
