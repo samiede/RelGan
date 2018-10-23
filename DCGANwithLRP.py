@@ -17,6 +17,8 @@ else:
 
 print(gpu)
 
+# Misc. helper functions
+
 def load_mnist_data():
     transform = transforms.Compose(
         [transforms.Resize(64),
@@ -64,6 +66,12 @@ def generator_target(size):
     """
     # noinspection PyUnresolvedReferences
     return torch.zeros(size, 1)
+
+
+def weight_init(m):
+    if type(m) == FirstConvolution or type(m) == NextConvolution or type(m) == BatchNorm2d or type(m) == nn.ConvTranspose2d:
+        m.weight.data.normal_(0, 0.2)
+        m.bias.data.fill_(0)
 
 
 # Network Definitions
@@ -114,8 +122,8 @@ class DiscriminatorNet(nn.Module):
 
     def weight_init(self, mean, std):
         for m in self.net.modules():
-            if isinstance(m, FirstConvolution) or isinstance(m, NextConvolution):
-                m.weight.data.normal_(mean, std)
+            # if isinstance(m, FirstConvolution) or isinstance(m, NextConvolution):
+            m.weight.data.normal_(mean, std)
                 # m.bias.data.fill_(0)
 
 
@@ -194,9 +202,9 @@ class GeneratorNet(torch.nn.Module):
 
     def weight_init(self, mean, std):
         for m in self.modules():
-            if isinstance(m, nn.ConvTranspose2d):
-                m.weight.data.normal_(mean, std)
-                m.bias.data.fill_(0)
+            # if isinstance(m, nn.ConvTranspose2d):
+            m.weight.data.normal_(mean, std)
+            m.bias.data.fill_(0)
 
 
 
@@ -236,11 +244,15 @@ num_batches = len(data_loader)
 # Create networks
 discriminator = DiscriminatorNet().to(gpu)
 generator = GeneratorNet().to(gpu)
-discriminator.weight_init(0, 0.2)
-generator.weight_init(0, 0.02)
 
-d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002)
-g_optimizer = optim.Adam(generator.parameters(), lr=0.0002)
+discriminator.apply(weight_init)
+generator.apply(weight_init)
+
+# discriminator.weight_init(0, 0.2)
+# generator.weight_init(0, 0.02)
+
+d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5,0.999))
+g_optimizer = optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5,0.999))
 
 loss = nn.BCELoss().to(gpu)
 
