@@ -252,7 +252,7 @@ loss = nn.BCEWithLogitsLoss().to(gpu)
 
 num_test_samples = 1
 # We use this noise to create images during the run
-test_noise = noise(num_test_samples).detach()
+test_noise = noise(num_test_samples)
 
 # Training
 
