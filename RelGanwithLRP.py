@@ -80,7 +80,6 @@ class DiscriminatorNet(nn.Module):
         self.net = RelevanceNet(
             Layer(  # Input Layer
                 FirstConvolution(1, d, 4, stride=2, padding=1),
-                BatchNorm2d(d),
                 PropReLu(),
             ),
             Layer(
@@ -94,14 +93,12 @@ class DiscriminatorNet(nn.Module):
                 PropReLu(),
             ),
             Layer(
-                NextConvolution(4 * d, 1, 4, stride=2, padding=1),
-                PropReLu(),
-            ),
-            Layer(
-                NextConvolution(1, 1, 4, stride=1, padding=0),
+                NextConvolution(4 * d, 8 * d, 4, stride=2, padding=1),
+                BatchNorm2d(8 * d),
                 PropReLu(),
             ),
             Layer(  # Output Layer
+                NextConvolution(8 * d, 1, 4, stride=1, padding=0),
                 FlattenLayer(),
                 nn.Sigmoid()
             )
