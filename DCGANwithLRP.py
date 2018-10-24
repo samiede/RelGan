@@ -55,7 +55,7 @@ def discriminator_target(size):
     Tensor containing ones, with shape = size
     """
     # noinspection PyUnresolvedReferences
-    return torch.ones(size, 1)
+    return torch.Tensor(size, 1).uniform_(0.7, 1.2)
 
 
 def generator_target(size):
@@ -65,7 +65,7 @@ def generator_target(size):
     :return: zeros tensor
     """
     # noinspection PyUnresolvedReferences
-    return torch.zeros(size, 1)
+    return torch.Tensor(size, 1).uniform_(0, 0.3)
 
 
 def weight_init(m):
