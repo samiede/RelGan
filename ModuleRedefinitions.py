@@ -200,7 +200,7 @@ class BatchNorm2d(nn.BatchNorm2d):
 
     def relprop(self, R):
         # self.recover(R)
-        return torch.div(R, self.factor)
+        return torch.div(R, self.factor).detach()
         return R
 
     def recover(self, input):
