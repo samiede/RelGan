@@ -25,7 +25,7 @@ print(gpu)
 def load_mnist_data():
     transform = transforms.Compose(
         [
-         transforms.Resize(32),
+         transforms.Resize(64),
          transforms.ToTensor(),
          transforms.Normalize((0.1307,), (0.3081,))
          ]
@@ -105,13 +105,13 @@ class DiscriminatorNet(nn.Module):
                 BatchNorm2d(4 * d),
                 PropReLu(),
             ),
-            # Layer(
-            #     NextConvolution(4 * d, 8 * d, 4, stride=2, padding=1),
-            #     BatchNorm2d(8 * d),
-            #     PropReLu(),
-            # ),
+            Layer(
+                NextConvolution(4 * d, 8 * d, 4, stride=2, padding=1),
+                BatchNorm2d(8 * d),
+                PropReLu(),
+            ),
             Layer(  # Output Layer
-                NextConvolution(4 * d, 1, 4, stride=1, padding=0),
+                NextConvolution(8 * d, 1, 4, stride=1, padding=0),
                 FlattenLayer(),
                 nn.Sigmoid()
             )
@@ -161,31 +161,31 @@ class GeneratorNet(torch.nn.Module):
         self.main = nn.Sequential(
             Layer(
                 #                   Channel_in,     c_out, k, s, p
-                nn.ConvTranspose2d(input_features, d * 4, 4, 1, 0),
-                nn.BatchNorm2d(d * 4),
+                nn.ConvTranspose2d(input_features, d * 8, 4, 1, 0),
+                nn.BatchNorm2d(d * 8),
                 nn.LeakyReLU(0.2)
                 # state size = 100 x 1024 x 4 x 4
             ),
             Layer(
                 #                   C_in, c_out,k, s, p
+                nn.ConvTranspose2d(d * 8, d * 4, 4, 2, 1),
+                nn.BatchNorm2d(d * 4),
+                nn.LeakyReLU(0.2)
+                # state size = 100 x 512 x 8 x 8
+            ),
+            Layer(
+                #                C_in, c_out,k, s, p
                 nn.ConvTranspose2d(d * 4, d * 2, 4, 2, 1),
                 nn.BatchNorm2d(d * 2),
                 nn.LeakyReLU(0.2)
-                # state size = 100 x 512 x 8 x 8
+                # state size = 100 x 256 x 16 x 16
             ),
             Layer(
                 #                C_in, c_out,k, s, p
                 nn.ConvTranspose2d(d * 2, d, 4, 2, 1),
                 nn.BatchNorm2d(d),
                 nn.LeakyReLU(0.2)
-                # state size = 100 x 256 x 16 x 16
-            ),
-            # Layer(
-            #     #                C_in, c_out,k, s, p
-            #     nn.ConvTranspose2d(d * 2, d, 4, 2, 1),
-            #     nn.BatchNorm2d(d),
-            #     nn.LeakyReLU(0.2)
-            #     ),
+                ),
             Layer(
                 #               C_in, c_out,k, s, p
                 nn.ConvTranspose2d(d, 1, 4, 2, 1),
@@ -254,7 +254,7 @@ num_epochs = 200
 
 for epoch in range(num_epochs):
     for n_batch, (real_batch, _) in enumerate(data_loader):
-        print('Batch', n_batch, end='\r')
+        print('\nBatch', n_batch, end='\r')
         n = real_batch.size(0)
 
 
