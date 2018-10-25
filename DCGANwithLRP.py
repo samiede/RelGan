@@ -309,7 +309,7 @@ for epoch in range(num_epochs):
             test_relevance = discriminator.relprop(discriminator.net.relevanceOutput)
 
             logger.log_images(
-                test_fake.data, test_relevance, num_test_samples,
+                test_fake.data, real_batch[0].data, num_test_samples,
                 epoch, n_batch, num_batches
             )
 
