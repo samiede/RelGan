@@ -254,7 +254,6 @@ num_epochs = 200
 
 for epoch in range(num_epochs):
     for n_batch, (real_batch, _) in enumerate(data_loader):
-        print('\n')
         print('Batch', n_batch, end='\r')
         n = real_batch.size(0)
 
