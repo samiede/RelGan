@@ -1,3 +1,4 @@
+import argparse
 import torch
 from torch import nn, optim
 from torchvision import transforms, datasets
@@ -19,16 +20,38 @@ print(gpu)
 
 # Misc. helper functions
 
-def load_mnist_data():
-    transform = transforms.Compose(
-        [transforms.Resize(64),
-         transforms.ToTensor(),
-         transforms.Normalize((.5, .5, .5), (.5, .5, .5))
-         ]
-    )
-    out_dir = './dataset'
-    return datasets.MNIST(root=out_dir, train=True, transform=transform, download=True)
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--dataset', required=True, help='MNIST | cifar10', default='MNIST')
+
+opt = parser.parse_args()
+print(opt)
+
+
+# Misc. helper functions
+
+def load_dataset():
+    out_dir = './dataset'
+
+    if opt.dataset == 'MNIST':
+        transform = transforms.Compose(
+            [
+             transforms.Resize(64),
+             transforms.ToTensor(),
+             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+             ]
+        )
+        return datasets.MNIST(root=out_dir, train=True, transform=transform, download=True), 1
+
+    elif opt.dataset == 'cifar10':
+        transform = transforms.Compose(
+            [
+                transforms.Resize(64),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0,5)),
+            ]
+        )
+        return datasets.CIFAR10(root=out_dir, train=True, download=True, transform=transform), 3
 
 def images_to_vectors(images):
     return images.view(images.size(0), 784)
@@ -87,7 +110,7 @@ class DiscriminatorNet(nn.Module):
         n_out = 1
         self.net = RelevanceNet(
             Layer(  # Input Layer
-                FirstConvolution(1, d, 4, stride=2, padding=1),
+                FirstConvolution(nc, d, 4, stride=2, padding=1),
                 PropReLu(),
             ),
             Layer(
@@ -185,7 +208,7 @@ class GeneratorNet(torch.nn.Module):
                 ),
             Layer(
                 #               C_in, c_out,k, s, p
-                nn.ConvTranspose2d(d, 1, 4, 2, 1),
+                nn.ConvTranspose2d(d, nc, 4, 2, 1),
                 nn.Tanh()
             )
         )
@@ -219,7 +242,7 @@ class GeneratorNet(torch.nn.Module):
 # Create Logger instance
 logger = Logger(model_name='LRPGAN', data_name='MNIST')
 
-data = load_mnist_data()
+data, nc = load_dataset()
 
 # Create Data Loader
 # noinspection PyUnresolvedReferences
@@ -255,7 +278,7 @@ num_epochs = 200
 
 for epoch in range(num_epochs):
     for n_batch, (real_batch, _) in enumerate(data_loader):
-        print('Batch', n_batch)
+        print('Batch', n_batch, end='\r')
         n = real_batch.size(0)
 
 
