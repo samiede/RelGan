@@ -1,3 +1,4 @@
+import sys
 import torch
 from torch import nn, optim
 from torchvision import transforms, datasets
@@ -254,8 +255,8 @@ num_epochs = 200
 for epoch in range(num_epochs):
     for n_batch, (real_batch, _) in enumerate(data_loader):
         print('Batch', n_batch)
+        sys.stdout.flush()
         n = real_batch.size(0)
-        print(real_batch.shape)
 
 
         # Images for Discriminator

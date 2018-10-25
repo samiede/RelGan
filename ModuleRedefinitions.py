@@ -54,7 +54,6 @@ class NextLinear(nn.Linear):
 class LastLinear(NextLinear):
 
     def forward(self, input):
-        print(input.shape)
         input = torch.reshape(input, (input.size(0), 1, input.size(2) * input.size(3)))
         self.X = input
         return super().forward(input)
