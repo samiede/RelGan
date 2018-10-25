@@ -27,7 +27,7 @@ def load_mnist_data():
         [
          transforms.Resize(64),
          transforms.ToTensor(),
-         transforms.Normalize((0.5,), (0.5,))
+         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
          ]
     )
     out_dir = './dataset'
