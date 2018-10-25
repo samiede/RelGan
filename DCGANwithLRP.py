@@ -17,11 +17,14 @@ else:
 
 print(gpu)
 
+
+
 # Misc. helper functions
 
 def load_mnist_data():
     transform = transforms.Compose(
-        [transforms.Resize(64),
+        [
+         # transforms.Resize(64),
          transforms.ToTensor(),
          transforms.Normalize((0.1307,), (0.3081,))
          ]
@@ -202,7 +205,6 @@ class GeneratorNet(torch.nn.Module):
         optimizer.zero_grad()
 
         # Reshape for prediction
-        # data_fake_d = torch.reshape(data_fake, (100, 1, 64, 64))
         # forward pass on discriminator with generated data
         prediction = discriminator(data_fake)
 
