@@ -123,7 +123,7 @@ class DiscriminatorNet(nn.Module):
         N = real_data.size(0)
 
         # Reset gradients
-        optimizer.zero_grad()
+        self.zero_grad()
 
         # 1.1 Train on real data
         prediction_real = self.forward(real_data)
@@ -196,7 +196,7 @@ class GeneratorNet(torch.nn.Module):
         n = data_fake.size(0)
 
         # Reset gradients
-        optimizer.zero_grad()
+        discriminator.zero_grad()
 
         # Reshape for prediction
         # forward pass on discriminator with generated data
