@@ -157,28 +157,28 @@ class GeneratorNet(torch.nn.Module):
                 #                   Channel_in,     c_out, k, s, p
                 nn.ConvTranspose2d(input_features, d * 8, 4, 1, 0),
                 nn.BatchNorm2d(d*8),
-                nn.ReLU()
+                nn.LeakyReLU(0.2)
                 # state size = 100 x 1024 x 4 x 4
             ),
             Layer(
                 #                   C_in, c_out,k, s, p
                 nn.ConvTranspose2d(d * 8, d * 4, 4, 2, 1),
                 nn.BatchNorm2d(d * 4),
-                nn.ReLU()
+                nn.LeakyReLU(0.2)
                 # state size = 100 x 512 x 8 x 8
             ),
             Layer(
                 #                C_in, c_out,k, s, p
                 nn.ConvTranspose2d(d * 4, d * 2, 4, 2, 1),
                 nn.BatchNorm2d(d * 2),
-                nn.ReLU()
+                nn.LeakyReLU(0.2)
                 # state size = 100 x 256 x 16 x 16
             ),
             Layer(
                 #                C_in, c_out,k, s, p
                 nn.ConvTranspose2d(d * 2, d, 4, 2, 1),
                 nn.BatchNorm2d(d),
-                nn.ReLU(0.2)
+                nn.LeakyReLU(0.2)
                 ),
             Layer(
                 #               C_in, c_out,k, s, p
