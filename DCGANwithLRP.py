@@ -3,7 +3,7 @@ from torch import nn, optim
 from torchvision import transforms, datasets
 import utils
 from utils import Logger
-from ModuleRedefinitions import RelevanceNet, Layer, FirstLinear, NextLinear, FlattenLayer, ReLu as PropReLu, \
+from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
     NextConvolution, FirstConvolution, Pooling, Dropout, BatchNorm2d
 
 # CUDA everything
@@ -70,7 +70,7 @@ def generator_target(size):
 
 def weight_init(m):
     if type(m) == FirstConvolution or type(m) == NextConvolution or type(m) == BatchNorm2d or type(m) == nn.ConvTranspose2d:
-        m.weight.data.normal_(0, 0.02)
+        m.weight.data.normal_(0.0, 0.02)
         m.bias.data.zero_()
 
 
@@ -269,10 +269,10 @@ for epoch in range(num_epochs):
         # Log batch error
         logger.log(d_error, g_error, epoch, n_batch, num_batches)
         # Display Progress every few batches
-        if n_batch % 100 == 0:
+        if n_batch % 100 == 0 or n_batch == num_batches:
             test_fake = generator(test_noise)
             discriminator.eval()
-            test_result = discriminator(test_fake)
+            test_result = discriminator(test_fake.detach())
             discriminator.train()
             test_relevance = discriminator.relprop(discriminator.net.relevanceOutput)
 

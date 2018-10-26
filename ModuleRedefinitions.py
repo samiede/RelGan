@@ -60,12 +60,6 @@ class LastLinear(NextLinear):
         return super().forward(input)
 
 
-class FlattenLayer(nn.Module):
-
-    def forward(self, input):
-        return input.view(-1, 1)
-
-
 class FirstConvolution(nn.Conv2d):
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=2, dilation=1, groups=1,
