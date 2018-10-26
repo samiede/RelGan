@@ -47,7 +47,7 @@ def noise(size):
     z = torch.randn((size, 100))
     # noinspection PyUnresolvedReferences
     z = torch.reshape(z, (size, 100, 1, 1))
-    return z
+    return z.to(gpu)
 
 
 def discriminator_target(size):
@@ -107,7 +107,7 @@ class DiscriminatorNet(nn.Module):
             ),
             Layer(  # Output Layer
                 NextConvolution(8 * d, 1, 4, stride=1, padding=0),
-                # FlattenLayer(),
+                FlattenLayer(),
                 nn.Sigmoid()
             )
         )
@@ -200,7 +200,6 @@ class GeneratorNet(torch.nn.Module):
         optimizer.zero_grad()
 
         # Reshape for prediction
-        data_fake_d = torch.reshape(data_fake, (100, 1, 64, 64))
         # forward pass on discriminator with generated data
         prediction = discriminator(data_fake)
 
@@ -221,7 +220,7 @@ data = load_mnist_data()
 
 # Create Data Loader
 # noinspection PyUnresolvedReferences
-data_loader = torch.utils.data.DataLoader(data, batch_size=100, shuffle=True)
+data_loader = torch.utils.data.DataLoader(data, batch_size=128, shuffle=True)
 # number of batches
 num_batches = len(data_loader)
 
@@ -232,8 +231,6 @@ generator = GeneratorNet().to(gpu)
 discriminator.apply(weight_init)
 generator.apply(weight_init)
 
-# discriminator.weight_init(0, 0.2)
-# generator.weight_init(0, 0.02)
 
 d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5,0.999))
 g_optimizer = optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5,0.999))
@@ -260,17 +257,18 @@ for epoch in range(num_epochs):
         # Images for Discriminator
 
         # Create fake data and detach the Generator, so we don't compute the gradients here
-        z = noise(n).detach()
+        z = noise(n)
         fake_data = generator(z)
         fake_data, real_batch = fake_data.to(gpu), real_batch.to(gpu)
 
         # Train Discriminator
         d_error, d_pred_real, d_pred_fake = discriminator.training_iteration(real_batch, fake_data, d_optimizer)
 
+        # Train Generator
+
         fake_data = generator(noise(n))
         fake_data = fake_data.to(gpu)
 
-        # Train Generator
         g_error = generator.training_iteration(fake_data, g_optimizer)
 
         # Log batch error
