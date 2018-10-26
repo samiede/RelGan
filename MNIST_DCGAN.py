@@ -212,7 +212,6 @@ for epoch in range(train_epoch):
         D_result = D_result.squeeze()
         D_fake_loss = BCE_loss(D_result, y_fake_)
         D_fake_score = D_result.data.mean()
-        exit()
         D_train_loss = D_real_loss + D_fake_loss
 
         D_train_loss.backward()
