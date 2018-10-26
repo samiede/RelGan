@@ -77,10 +77,10 @@ def normal_init(m, mean, std):
         m.bias.data.zero_()
 
 fixed_z_ = torch.randn((5 * 5, 100)).view(-1, 100, 1, 1)    # fixed noise
-fixed_z_ = Variable(fixed_z_.cuda()).no_grad()
+fixed_z_ = Variable(fixed_z_.cuda(), requires_grad=False)
 def show_result(num_epoch, show = False, save = False, path = 'result.png', isFix=False):
     z_ = torch.randn((5*5, 100)).view(-1, 100, 1, 1)
-    z_ = Variable(z_.cuda(), volatile=True).no_grad()
+    z_ = Variable(z_.cuda(), requires_grad=False)
 
     G.eval()
     if isFix:
