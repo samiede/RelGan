@@ -157,28 +157,28 @@ class GeneratorNet(torch.nn.Module):
                 #                   Channel_in,     c_out, k, s, p
                 nn.ConvTranspose2d(input_features, d * 8, 4, 1, 0),
                 nn.BatchNorm2d(d*8),
-                nn.LeakyReLU(0.2)
+                nn.ReLU()
                 # state size = 100 x 1024 x 4 x 4
             ),
             Layer(
                 #                   C_in, c_out,k, s, p
                 nn.ConvTranspose2d(d * 8, d * 4, 4, 2, 1),
                 nn.BatchNorm2d(d * 4),
-                nn.LeakyReLU(0.2)
+                nn.ReLU()
                 # state size = 100 x 512 x 8 x 8
             ),
             Layer(
                 #                C_in, c_out,k, s, p
                 nn.ConvTranspose2d(d * 4, d * 2, 4, 2, 1),
                 nn.BatchNorm2d(d * 2),
-                nn.LeakyReLU(0.2)
+                nn.ReLU()
                 # state size = 100 x 256 x 16 x 16
             ),
             Layer(
                 #                C_in, c_out,k, s, p
                 nn.ConvTranspose2d(d * 2, d, 4, 2, 1),
                 nn.BatchNorm2d(d),
-                nn.LeakyReLU(0.2)
+                nn.ReLU()
                 ),
             Layer(
                 #               C_in, c_out,k, s, p
@@ -237,7 +237,7 @@ loss = nn.BCELoss().to(gpu)
 
 num_test_samples = 1
 # We use this noise to create images during the run
-test_noise = noise(num_test_samples)
+test_noise = noise(num_test_samples).detach()
 
 # Training
 
@@ -261,7 +261,7 @@ for epoch in range(num_epochs):
         # Train Discriminator
         d_error, d_pred_real, d_pred_fake = discriminator.training_iteration(real_batch, fake_data, d_optimizer)
         # Train Generator
-        fake_data = generator(noise(n))
+        fake_data = generator(noise(n)).detach()
         fake_data = fake_data.to(gpu)
 
         g_error = generator.training_iteration(fake_data, g_optimizer)
