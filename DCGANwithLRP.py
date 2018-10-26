@@ -252,20 +252,22 @@ for epoch in range(num_epochs):
     for n_batch, (real_batch, _) in enumerate(data_loader):
         print('Batch', n_batch)
         n = real_batch.size(0)
-
+        print('Data shape', real_batch.shape)
 
         # Images for Discriminator
 
         # Create fake data and detach the Generator, so we don't compute the gradients here
         z = noise(n)
+        print('Shape of noise', z.shape)
         fake_data = generator(z)
+        print('Generator result', fake_data.shape)
         fake_data, real_batch = fake_data.to(gpu), real_batch.to(gpu)
 
         # Train Discriminator
         d_error, d_pred_real, d_pred_fake = discriminator.training_iteration(real_batch, fake_data, d_optimizer)
-
+        print('Discriminator result', d_pred_fake.shape)
         # Train Generator
-
+        exit()
         fake_data = generator(noise(n))
         fake_data = fake_data.to(gpu)
 

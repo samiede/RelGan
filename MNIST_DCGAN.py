@@ -193,6 +193,7 @@ for epoch in range(train_epoch):
         D.zero_grad()
 
         mini_batch = x_.size()[0]
+        print('Data shape', x_.shape)
 
         y_real_ = torch.ones(mini_batch)
         y_fake_ = torch.zeros(mini_batch)
@@ -202,6 +203,7 @@ for epoch in range(train_epoch):
         D_real_loss = BCE_loss(D_result, y_real_)
 
         z_ = torch.randn((mini_batch, 100)).view(-1, 100, 1, 1)
+        print('Shape of noise:', z_.shape)
         z_ = Variable(z_.cuda())
         G_result = G(z_)
         print('Generator result', G_result.shape)
@@ -211,7 +213,7 @@ for epoch in range(train_epoch):
         D_result = D_result.squeeze()
         D_fake_loss = BCE_loss(D_result, y_fake_)
         D_fake_score = D_result.data.mean()
-
+        exit()
         D_train_loss = D_real_loss + D_fake_loss
 
         D_train_loss.backward()
