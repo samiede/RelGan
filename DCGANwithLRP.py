@@ -41,7 +41,7 @@ def vectors_to_images(vectors):
 def noise(size):
     """
 
-    Generates a 1-d vector of gaussian sampled random values
+    Generates a vector of gaussian sampled random values
     """
     # noinspection PyUnresolvedReferences
     z = torch.randn((size, 100))
@@ -55,7 +55,7 @@ def discriminator_target(size):
     Tensor containing ones, with shape = size
     """
     # noinspection PyUnresolvedReferences
-    return torch.Tensor(size, 1).uniform_(0.7, 1.2)
+    return torch.Tensor(size).uniform_(0.7, 1.2)
 
 
 def generator_target(size):
@@ -65,7 +65,7 @@ def generator_target(size):
     :return: zeros tensor
     """
     # noinspection PyUnresolvedReferences
-    return torch.Tensor(size, 1).uniform_(0, 0.3)
+    return torch.Tensor(size).uniform_(0, 0.3)
 
 
 def weight_init(m):
@@ -107,7 +107,6 @@ class DiscriminatorNet(nn.Module):
             ),
             Layer(  # Output Layer
                 NextConvolution(8 * d, 1, 4, stride=1, padding=0),
-                FlattenLayer(),
                 nn.Sigmoid()
             )
         )
@@ -115,7 +114,7 @@ class DiscriminatorNet(nn.Module):
         self.optimizer = optim.Adam(self.parameters(), lr=0.0002)
 
     def forward(self, x):
-        return self.net(x)
+        return self.net(x).view(-1,1).squeeze(1)
 
     def relprop(self, R):
         return self.net.relprop(R)
@@ -212,7 +211,6 @@ class GeneratorNet(torch.nn.Module):
 
         return prediction_error
 
-
 # Create Logger instance
 logger = Logger(model_name='LRPGAN', data_name='MNIST')
 
@@ -250,22 +248,18 @@ num_epochs = 200
 
 for epoch in range(num_epochs):
     for n_batch, (real_batch, _) in enumerate(data_loader):
-        print('Batch', n_batch)
+        print('Batch', n_batch, end='\r')
         n = real_batch.size(0)
-        print('Data shape', real_batch.shape)
 
         # Images for Discriminator
 
         # Create fake data and detach the Generator, so we don't compute the gradients here
         z = noise(n)
-        print('Shape of noise', z.shape)
         fake_data = generator(z)
-        print('Generator result', fake_data.shape)
         fake_data, real_batch = fake_data.to(gpu), real_batch.to(gpu)
 
         # Train Discriminator
         d_error, d_pred_real, d_pred_fake = discriminator.training_iteration(real_batch, fake_data, d_optimizer)
-        print('Discriminator result', d_pred_fake.shape)
         # Train Generator
         exit()
         fake_data = generator(noise(n))
