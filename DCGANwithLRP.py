@@ -119,30 +119,6 @@ class DiscriminatorNet(nn.Module):
     def relprop(self, R):
         return self.net.relprop(R)
 
-    def training_iteration(self, real_data, fake_data, optimizer):
-        N = real_data.size(0)
-
-        # Reset gradients
-        self.zero_grad()
-
-        # 1.1 Train on real data
-        prediction_real = self.forward(real_data)
-        # Calculate error & backpropagation
-        error_real = loss(prediction_real, discriminator_target(N))
-        # error_real.backward()
-        # 1.2 Train on fake data
-        predictions_fake = self.forward(fake_data)
-        # Calculate error & backprop
-        error_fake = loss(predictions_fake, generator_target(N))
-        # error_fake.backward()
-        training_loss = error_real + error_fake
-        training_loss.backward()
-
-        # 1.3 update weights
-        optimizer.step()
-
-        return error_fake + error_real, prediction_real, predictions_fake
-
 
 class GeneratorNet(torch.nn.Module):
     """
@@ -191,26 +167,6 @@ class GeneratorNet(torch.nn.Module):
         return self.main(x)
 
 
-    @staticmethod
-    def training_iteration(data_fake, optimizer):
-        n = data_fake.size(0)
-
-        # Reset gradients
-        discriminator.zero_grad()
-
-        # Reshape for prediction
-        # forward pass on discriminator with generated data
-        prediction = discriminator(data_fake)
-
-        # Calculate error to supposed real labels and backprop
-        prediction_error = loss(prediction, discriminator_target(n))
-        prediction_error.backward()
-
-        # Update weights with gradient
-        optimizer.step()
-
-        return prediction_error
-
 # Create Logger instance
 logger = Logger(model_name='LRPGAN', data_name='MNIST')
 
@@ -251,27 +207,47 @@ for epoch in range(num_epochs):
         print('Batch', n_batch, end='\r')
         n = real_batch.size(0)
 
-        # Images for Discriminator
-
-        # Create fake data and detach the Generator, so we don't compute the gradients here
-        z = noise(n)
-        fake_data = generator(z)
-        fake_data, real_batch = fake_data.to(gpu), real_batch.to(gpu)
-
         # Train Discriminator
-        d_error, d_pred_real, d_pred_fake = discriminator.training_iteration(real_batch, fake_data, d_optimizer)
-        # Train Generator
-        fake_data = generator(noise(n)).detach()
-        fake_data = fake_data.to(gpu)
+        discriminator.zero_grad()
 
-        g_error = generator.training_iteration(fake_data, g_optimizer)
+        y_real = discriminator_target(n).to(gpu)
+        y_fake = generator_target(n).to(gpu)
+        x_r = real_batch.to(gpu)
+
+        # Predict on real data
+        d_prediction_real = discriminator(x_r)
+        d_loss_real = loss(d_prediction_real, y_real)
+
+        # Create and predict on fake data
+        z_ = noise(n).to(gpu)
+        x_f = generator(z_).to(gpu)
+
+        d_prediction_fake = discriminator(x_f)
+        d_loss_fake = loss(d_prediction_fake, y_fake)
+        d_training_loss = d_loss_real + d_loss_fake
+
+        # Backpropagate and update weights
+        d_training_loss.backward()
+        d_optimizer.step()
+
+        # Train Generator
+        generator.zero_grad()
+
+        # Generate and predict on fake images as if they were real
+        z_ = noise(n).to(gpu)
+        x_f = generator(z_)
+        g_prediction_fake = discriminator(x_f)
+        g_training_loss = loss(g_prediction_fake, y_real)
+
+        # Backpropagate and update weights
+        g_training_loss.backward()
+        g_optimizer.step()
 
         # Log batch error
-        logger.log(d_error, g_error, epoch, n_batch, num_batches)
+        logger.log(d_training_loss, g_training_loss, epoch, n_batch, num_batches)
         # Display Progress every few batches
         if n_batch % 100 == 0 or n_batch == num_batches:
             test_fake = generator(test_noise)
-            discriminator.eval()
             test_result = discriminator(test_fake)
             test_relevance = discriminator.relprop(discriminator.net.relevanceOutput)
 
@@ -282,5 +258,5 @@ for epoch in range(num_epochs):
 
             logger.display_status(
                 epoch, num_epochs, n_batch, num_batches,
-                d_error, g_error, d_pred_real, d_pred_fake
+                d_training_loss, g_training_loss, d_prediction_real, d_prediction_fake
             )
