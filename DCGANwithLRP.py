@@ -273,7 +273,6 @@ for epoch in range(num_epochs):
             test_fake = generator(test_noise)
             discriminator.eval()
             test_result = discriminator(test_fake.detach())
-            discriminator.train()
             test_relevance = discriminator.relprop(discriminator.net.relevanceOutput)
 
             logger.log_images(
