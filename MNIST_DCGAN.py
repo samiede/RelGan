@@ -1,7 +1,7 @@
 import os, time
 import matplotlib
 import matplotlib.pyplot as plt
-matplotlib.use('agg')
+plt.switch_backend('agg')
 import itertools
 import pickle
 import imageio
