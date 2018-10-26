@@ -272,7 +272,7 @@ for epoch in range(num_epochs):
         if n_batch % 100 == 0 or n_batch == num_batches:
             test_fake = generator(test_noise)
             discriminator.eval()
-            test_result = discriminator(test_fake.detach())
+            test_result = discriminator(test_fake)
             test_relevance = discriminator.relprop(discriminator.net.relevanceOutput)
 
             logger.log_images(
