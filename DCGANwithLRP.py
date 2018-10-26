@@ -261,7 +261,6 @@ for epoch in range(num_epochs):
         # Train Discriminator
         d_error, d_pred_real, d_pred_fake = discriminator.training_iteration(real_batch, fake_data, d_optimizer)
         # Train Generator
-        exit()
         fake_data = generator(noise(n))
         fake_data = fake_data.to(gpu)
 
