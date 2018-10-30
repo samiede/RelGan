@@ -73,7 +73,8 @@ class FirstConvolution(nn.Conv2d):
         # Input shape: minibatch x in_channels, iH x iW
         self.X = input
         output = super().forward(input)
-        # print('First Convolution Output Zero: ', output.sum().item() == 0)
+        print('Dim', output.shape)
+        print('First Convolution Output Zero: ', output.sum().item() <= 0)
         return output
 
     def relprop(self, R):
@@ -142,15 +143,18 @@ class NextConvolution(nn.Conv2d):
 
 class ReLu(nn.ReLU):
 
-    def __init__(self, inplace=False):
+    def __init__(self, name, inplace=False):
         super().__init__(inplace=inplace)
+        self.name = name
 
     def forward(self, input):
         output = super().forward(input)
-        # print('Relu output zero: ', output.sum().item() == 0)
-        if (output.sum().item() == 0):
-            print('Relu input', input),
-            print('Output', output)
+        if self.name == '1':
+            print('1', output)
+        if output.sum().item() == 0:
+            print('ReLU:', self.name, '\n', input)
+            # print('Relu input', input),
+            # print('Output', output)
         return super().forward(input)
 
     def relprop(self, R):

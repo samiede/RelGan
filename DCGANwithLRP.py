@@ -103,26 +103,25 @@ class DiscriminatorNet(nn.Module):
     def __init__(self, d=128):
         super(DiscriminatorNet, self).__init__()
 
-        n_out = 1
         self.net = RelevanceNet(
             Layer(  # Input Layer
                 FirstConvolution(nc, d, 4, stride=2, padding=1),
-                PropReLu(),
+                PropReLu('1'),
             ),
             Layer(
                 NextConvolution(d, 2 * d, 4, stride=2, padding=1),
                 BatchNorm2d(2 * d),
-                PropReLu(),
+                PropReLu('2'),
             ),
             Layer(
                 NextConvolution(2 * d, 4 * d, 4, stride=2, padding=1),
                 BatchNorm2d(4 * d),
-                PropReLu(),
+                PropReLu('3'),
             ),
             Layer(
                 NextConvolution(4 * d, 8 * d, 4, stride=2, padding=1),
                 BatchNorm2d(8 * d),
-                PropReLu(),
+                PropReLu('4'),
             ),
             Layer(  # Output Layer
                 NextConvolution(8 * d, 1, 4, stride=1, padding=0),
@@ -236,11 +235,11 @@ for epoch in range(num_epochs):
         # Predict on real data
         d_prediction_real = discriminator(x_r)
         d_loss_real = loss(d_prediction_real, y_real)
+        exit()
 
         # Create and predict on fake data
         z_ = noise(n).to(gpu)
         x_f = generator(z_).to(gpu)
-
 
         d_prediction_fake = discriminator(x_f.detach())
         d_loss_fake = loss(d_prediction_fake, y_fake)
