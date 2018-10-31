@@ -25,7 +25,8 @@ class Logger:
         self.data_name = data_name
 
         self.comment = '{}_{}'.format(model_name, data_name)
-        self.data_subdir = '{}/{}'.format(model_name, data_name)
+        # self.data_subdir = '{}/{}'.format(model_name, data_name)
+        self.data_subdir = '{}'.format(data_name)
 
         # TensorBoard
         self.writer = SummaryWriter(comment=self.comment)

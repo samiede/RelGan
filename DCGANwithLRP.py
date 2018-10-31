@@ -10,7 +10,7 @@ from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', required=True, help='MNIST | cifar10', default='MNIST')
-parser.add_argument('--imageSize', default='64')
+parser.add_argument('--imageSize', type=int, default=64, help='The height/width of the training/output images')
 
 opt = parser.parse_args()
 print(opt)
@@ -34,7 +34,7 @@ def load_dataset():
         return datasets.MNIST(root=out_dir, train=True, download=True,
                               transform=transforms.Compose(
                                   [
-                                      transforms.Resize(64),
+                                      transforms.Resize(opt.imageSize),
                                       transforms.ToTensor(),
                                       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                   ]
@@ -44,7 +44,7 @@ def load_dataset():
         out_dir = './dataset/cifar10'
         return datasets.CIFAR10(root=out_dir, download=True, train=True,
                                 transform=transforms.Compose([
-                                    transforms.Resize(64),
+                                    transforms.Resize(opt.imageSize),
                                     transforms.ToTensor(),
                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                 ])), 3
@@ -182,7 +182,7 @@ class GeneratorNet(torch.nn.Module):
 
 
 # Create Logger instance
-logger = Logger(model_name='LRPGAN', data_name='MNIST')
+logger = Logger(model_name='LRPGAN', data_name=opt.dataset)
 
 dataset, nc = load_dataset()
 
