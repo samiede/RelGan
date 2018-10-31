@@ -25,7 +25,8 @@ class Logger:
         self.data_name = data_name
 
         self.comment = '{}_{}'.format(model_name, data_name)
-        self.data_subdir = '{}/{}'.format(model_name, data_name)
+        # self.data_subdir = '{}/{}'.format(model_name, data_name)
+        self.data_subdir = '{}'.format(data_name)
 
         # TensorBoard
         self.writer = SummaryWriter(comment=self.comment)
@@ -127,9 +128,7 @@ class Logger:
             epoch, num_epochs, n_batch, num_batches)
         )
         print('Discriminator Loss: {:.4f}, Generator Loss: {:.4f}'.format(d_error, g_error))
-        print('D(x): {:.4f}, D(G(z)): {:.4f}'.format(d_pred_real.mean(), d_pred_fake.mean()))
-        print(' ')
-
+        print('D(x): {:.4f}, D(G(z)): {:.4f} \n'.format(d_pred_real.mean(), d_pred_fake.mean()))
     def save_models(self, generator, discriminator, epoch):
         out_dir = './data/models/{}'.format(self.data_subdir)
         Logger._make_dir(out_dir)
