@@ -63,7 +63,8 @@ class Logger:
         img_name = '{}/images{}'.format(self.comment, '')
 
         # concat images
-        images = images.repeat(1, 3, 1, 1)
+        if images.size(1) == 1:
+            images = images.repeat(1, 3, 1, 1)
         if torch.cuda.is_available():
             images = images.cuda()
             relevance = relevance.cuda()

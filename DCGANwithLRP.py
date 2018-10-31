@@ -266,6 +266,7 @@ for epoch in range(num_epochs):
             test_relevance = discriminator.relprop(discriminator.net.relevanceOutput)
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            print(test_relevance.shape)
 
             logger.log_images(
                 test_fake.data, test_relevance, num_test_samples,
