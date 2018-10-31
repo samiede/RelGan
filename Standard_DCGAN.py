@@ -146,6 +146,10 @@ class Discriminator(nn.Module):
     def __init__(self, ngpu):
         super(Discriminator, self).__init__()
         self.ngpu = ngpu
+
+        self.first = nn.Conv2d(nc, ndf, 4, 2, 1, bias=False)
+        self.first_r = nn.LeakyReLU(0.2, inplace=True)
+
         self.main = nn.Sequential(
             # input is (nc) x 64 x 64
             nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
@@ -171,6 +175,10 @@ class Discriminator(nn.Module):
         if input.is_cuda and self.ngpu > 1:
             output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
         else:
+            print('Input', input[0])
+            x = self.first_r(self.first(input))
+            print('first layer shape', x.shape)
+            print(x)
             output = self.main(input)
 
         return output.view(-1, 1).squeeze(1)
@@ -202,7 +210,9 @@ for epoch in range(opt.niter):
         real_cpu = data[0].to(device)
         batch_size = real_cpu.size(0)
         label = torch.full((batch_size,), real_label, device=device)
-        print(label.shape)
+
+        print('real', real_cpu.shape)
+        exit()
 
         output = netD(real_cpu)
         errD_real = criterion(output, label)

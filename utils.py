@@ -57,7 +57,6 @@ class Logger:
             relevance = torch.from_numpy(relevance)
 
         if format == 'NCHW':
-            # images = images.transpose(1, 3)
             relevance = relevance.permute(0, 3, 1, 2)
 
         step = Logger._step(epoch, n_batch, num_batches)
