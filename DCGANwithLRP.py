@@ -83,9 +83,9 @@ def weight_init(m):
     if type(m) == FirstConvolution or type(m) == NextConvolution or type(m) == nn.ConvTranspose2d:
         m.weight.data.normal_(0.0, 0.02)
         m.bias.data.zero_()
-    if type(m) == BatchNorm2d:
-        m.weight.data.normal_(1.0, 0.02)
-        m.bias.data.zero_()
+    # if type(m) == BatchNorm2d:
+    #     m.weight.data.normal_(1.0, 0.02)
+    #     m.bias.data.zero_()
 
 
 # Network Definitions
