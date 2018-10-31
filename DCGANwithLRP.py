@@ -10,6 +10,7 @@ from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', required=True, help='MNIST | cifar10', default='MNIST')
+parser.add_argument('--imageSize', default='64')
 
 opt = parser.parse_args()
 print(opt)
