@@ -4,21 +4,8 @@ from torch import nn, optim
 from torchvision import transforms, datasets
 import utils
 from utils import Logger
-from ModuleRedefinitions import RelevanceNet, Layer, FirstLinear, NextLinear, FlattenLayer, ReLu as PropReLu, \
+from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
     NextConvolution, FirstConvolution, Pooling, Dropout, BatchNorm2d
-
-# CUDA everything
-
-gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-torch.set_default_dtype(torch.float32)
-if torch.cuda.is_available():
-    torch.set_default_tensor_type('torch.cuda.FloatTensor')
-else:
-    torch.set_default_tensor_type('torch.FloatTensor')
-
-print(gpu)
-
-# Misc. helper functions
 
 
 parser = argparse.ArgumentParser()
@@ -28,49 +15,50 @@ opt = parser.parse_args()
 print(opt)
 
 
+# CUDA everything
+
+gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+torch.set_default_dtype(torch.float32)
+if torch.cuda.is_available():
+    torch.set_default_tensor_type('torch.cuda.FloatTensor')
+else:
+    torch.set_default_tensor_type('torch.FloatTensor')
+print(gpu)
+
 # Misc. helper functions
 
 def load_dataset():
-    out_dir = './dataset'
-
     if opt.dataset == 'MNIST':
-        transform = transforms.Compose(
-            [
-             transforms.Resize(64),
-             transforms.ToTensor(),
-             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-             ]
-        )
-        return datasets.MNIST(root=out_dir, train=True, transform=transform, download=True), 1
+        out_dir = './dataset/MNIST'
+        return datasets.MNIST(root=out_dir, train=True, download=True,
+                              transform=transforms.Compose(
+                                  [
+                                      transforms.Resize(64),
+                                      transforms.ToTensor(),
+                                      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                                  ]
+                              )), 1
 
     elif opt.dataset == 'cifar10':
-        transform = transforms.Compose(
-            [
-                transforms.Resize(64),
-                transforms.ToTensor(),
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0,5)),
-            ]
-        )
-        return datasets.CIFAR10(root=out_dir, train=True, download=True, transform=transform), 3
-
-def images_to_vectors(images):
-    return images.view(images.size(0), 784)
-
-
-def vectors_to_images(vectors):
-    return vectors.view(vectors.size(0), 1, 28, 28)
+        out_dir = './dataset/cifar10'
+        return datasets.CIFAR10(root=out_dir, download=True, train=True,
+                                transform=transforms.Compose([
+                                    transforms.Resize(64),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                                ])), 3
 
 
 def noise(size):
     """
 
-    Generates a 1-d vector of gaussian sampled random values
+    Generates a vector of gaussian sampled random values
     """
     # noinspection PyUnresolvedReferences
     z = torch.randn((size, 100))
     # noinspection PyUnresolvedReferences
     z = torch.reshape(z, (size, 100, 1, 1))
-    return z
+    return z.to(gpu)
 
 
 def discriminator_target(size):
@@ -78,7 +66,7 @@ def discriminator_target(size):
     Tensor containing ones, with shape = size
     """
     # noinspection PyUnresolvedReferences
-    return torch.Tensor(size, 1).uniform_(0.7, 1.2)
+    return torch.Tensor(size).uniform_(0.7, 1.2)
 
 
 def generator_target(size):
@@ -88,13 +76,16 @@ def generator_target(size):
     :return: zeros tensor
     """
     # noinspection PyUnresolvedReferences
-    return torch.Tensor(size, 1).uniform_(0, 0.3)
+    return torch.Tensor(size).uniform_(0, 0.3)
 
 
 def weight_init(m):
-    if type(m) == FirstConvolution or type(m) == NextConvolution or type(m) == BatchNorm2d or type(m) == nn.ConvTranspose2d:
-        m.weight.data.normal_(0, 0.02)
+    if type(m) == FirstConvolution or type(m) == NextConvolution or type(m) == nn.ConvTranspose2d:
+        m.weight.data.normal_(0.0, 0.02)
         m.bias.data.zero_()
+    # if type(m) == BatchNorm2d:
+    #     m.weight.data.normal_(1.0, 0.02)
+    #     m.bias.data.zero_()
 
 
 # Network Definitions
@@ -107,7 +98,6 @@ class DiscriminatorNet(nn.Module):
     def __init__(self, d=128):
         super(DiscriminatorNet, self).__init__()
 
-        n_out = 1
         self.net = RelevanceNet(
             Layer(  # Input Layer
                 FirstConvolution(nc, d, 4, stride=2, padding=1),
@@ -130,7 +120,6 @@ class DiscriminatorNet(nn.Module):
             ),
             Layer(  # Output Layer
                 NextConvolution(8 * d, 1, 4, stride=1, padding=0),
-                FlattenLayer(),
                 nn.Sigmoid()
             )
         )
@@ -138,34 +127,10 @@ class DiscriminatorNet(nn.Module):
         self.optimizer = optim.Adam(self.parameters(), lr=0.0002)
 
     def forward(self, x):
-        return self.net(x)
+        return self.net(x).view(-1, 1).squeeze(1)
 
     def relprop(self, R):
         return self.net.relprop(R)
-
-    def training_iteration(self, real_data, fake_data, optimizer):
-        N = real_data.size(0)
-
-        # Reset gradients
-        optimizer.zero_grad()
-
-        # 1.1 Train on real data
-        prediction_real = self.forward(real_data)
-        # Calculate error & backpropagation
-        error_real = loss(prediction_real, discriminator_target(N))
-        # error_real.backward()
-        # 1.2 Train on fake data
-        predictions_fake = self.forward(fake_data)
-        # Calculate error & backprop
-        error_fake = loss(predictions_fake, generator_target(N))
-        # error_fake.backward()
-        training_loss = error_real + error_fake
-        training_loss.backward()
-
-        # 1.3 update weights
-        optimizer.step()
-
-        return error_fake + error_real, prediction_real, predictions_fake
 
 
 class GeneratorNet(torch.nn.Module):
@@ -176,13 +141,11 @@ class GeneratorNet(torch.nn.Module):
     def __init__(self, input_features=100, d=128):
         super(GeneratorNet, self).__init__()
 
-        input_features = 100
-
         self.main = nn.Sequential(
             Layer(
                 #                   Channel_in,     c_out, k, s, p
                 nn.ConvTranspose2d(input_features, d * 8, 4, 1, 0),
-                nn.BatchNorm2d(d*8),
+                nn.BatchNorm2d(d * 8),
                 nn.LeakyReLU(0.2)
                 # state size = 100 x 1024 x 4 x 4
             ),
@@ -205,7 +168,7 @@ class GeneratorNet(torch.nn.Module):
                 nn.ConvTranspose2d(d * 2, d, 4, 2, 1),
                 nn.BatchNorm2d(d),
                 nn.LeakyReLU(0.2)
-                ),
+            ),
             Layer(
                 #               C_in, c_out,k, s, p
                 nn.ConvTranspose2d(d, nc, 4, 2, 1),
@@ -217,36 +180,15 @@ class GeneratorNet(torch.nn.Module):
         return self.main(x)
 
 
-    @staticmethod
-    def training_iteration(data_fake, optimizer):
-        n = data_fake.size(0)
-
-        # Reset gradients
-        optimizer.zero_grad()
-
-        # Reshape for prediction
-        data_fake_d = torch.reshape(data_fake, (100, 1, 64, 64))
-        # forward pass on discriminator with generated data
-        prediction = discriminator(data_fake)
-
-        # Calculate error to supposed real labels and backprop
-        prediction_error = loss(prediction, discriminator_target(n))
-        prediction_error.backward()
-
-        # Update weights with gradient
-        optimizer.step()
-
-        return prediction_error
-
-
 # Create Logger instance
 logger = Logger(model_name='LRPGAN', data_name='MNIST')
 
-data, nc = load_dataset()
+dataset, nc = load_dataset()
 
 # Create Data Loader
 # noinspection PyUnresolvedReferences
-data_loader = torch.utils.data.DataLoader(data, batch_size=100, shuffle=True)
+data_loader = torch.utils.data.DataLoader(dataset, batch_size=128, shuffle=True)
+
 # number of batches
 num_batches = len(data_loader)
 
@@ -257,17 +199,14 @@ generator = GeneratorNet().to(gpu)
 discriminator.apply(weight_init)
 generator.apply(weight_init)
 
-# discriminator.weight_init(0, 0.2)
-# generator.weight_init(0, 0.02)
-
-d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5,0.999))
-g_optimizer = optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5,0.999))
+d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
+g_optimizer = optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 
 loss = nn.BCELoss().to(gpu)
 
 num_test_samples = 1
 # We use this noise to create images during the run
-test_noise = noise(num_test_samples)
+test_noise = noise(num_test_samples).detach()
 
 # Training
 
@@ -281,39 +220,59 @@ for epoch in range(num_epochs):
         print('Batch', n_batch, end='\r')
         n = real_batch.size(0)
 
-
-        # Images for Discriminator
-
-        # Create fake data and detach the Generator, so we don't compute the gradients here
-        z = noise(n).detach()
-        fake_data = generator(z)
-        fake_data, real_batch = fake_data.to(gpu), real_batch.to(gpu)
-
         # Train Discriminator
-        d_error, d_pred_real, d_pred_fake = discriminator.training_iteration(real_batch, fake_data, d_optimizer)
+        discriminator.zero_grad()
 
-        fake_data = generator(noise(n))
-        fake_data = fake_data.to(gpu)
+        y_real = discriminator_target(n).to(gpu)
+        y_fake = generator_target(n).to(gpu)
+        x_r = real_batch.to(gpu)
+
+        # Predict on real data
+        d_prediction_real = discriminator(x_r)
+        d_loss_real = loss(d_prediction_real, y_real)
+
+        # Create and predict on fake data
+        z_ = noise(n).to(gpu)
+        x_f = generator(z_).to(gpu)
+
+        # Detach so we don't calculate the gradients here (speed up)
+        d_prediction_fake = discriminator(x_f.detach())
+        d_loss_fake = loss(d_prediction_fake, y_fake)
+        d_training_loss = d_loss_real + d_loss_fake
+
+        # Backpropagate and update weights
+        d_training_loss.backward()
+        d_optimizer.step()
 
         # Train Generator
-        g_error = generator.training_iteration(fake_data, g_optimizer)
+        generator.zero_grad()
+
+        # Generate and predict on fake images as if they were real
+        z_ = noise(n).to(gpu)
+        x_f = generator(z_)
+        g_prediction_fake = discriminator(x_f)
+        g_training_loss = loss(g_prediction_fake, y_real)
+
+        # Backpropagate and update weights
+        g_training_loss.backward()
+        g_optimizer.step()
 
         # Log batch error
-        logger.log(d_error, g_error, epoch, n_batch, num_batches)
+        logger.log(d_training_loss, g_training_loss, epoch, n_batch, num_batches)
         # Display Progress every few batches
-        if n_batch % 100 == 0:
+        if n_batch % 100 == 0 or n_batch == num_batches:
             test_fake = generator(test_noise)
-            discriminator.eval()
             test_result = discriminator(test_fake)
-            discriminator.train()
             test_relevance = discriminator.relprop(discriminator.net.relevanceOutput)
+            # Add up relevance of all color channels
+            test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
             logger.log_images(
-                test_fake.data, real_batch[0].data, num_test_samples,
+                test_fake.data, test_relevance, num_test_samples,
                 epoch, n_batch, num_batches
             )
 
             logger.display_status(
                 epoch, num_epochs, n_batch, num_batches,
-                d_error, g_error, d_pred_real, d_pred_fake
+                d_training_loss, g_training_loss, d_prediction_real, d_prediction_fake
             )
