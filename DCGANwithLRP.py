@@ -264,7 +264,7 @@ for epoch in range(num_epochs):
         if n_batch % 100 == 0 or n_batch == num_batches:
             test_fake = generator(test_noise)
             test_result = discriminator(test_fake)
-            # test_sensivity = torch.autograd.grad(test_result, test_fake)[0].pow(2)
+            test_sensivity = torch.autograd.grad(test_result, test_fake)[0].pow(2)
             test_relevance = discriminator.relprop(discriminator.net.relevanceOutput)
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
