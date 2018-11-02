@@ -270,7 +270,7 @@ for epoch in range(num_epochs):
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
             logger.log_images(
-                test_fake.data, test_relevance, num_test_samples,
+                test_fake.data, test_sensivity, num_test_samples,
                 epoch, n_batch, num_batches
             )
 
