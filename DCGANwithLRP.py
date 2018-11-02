@@ -266,7 +266,7 @@ for epoch in range(num_epochs):
             test_result = discriminator(test_fake)
             # test_result.
             # test_result.backward(retain_variables=True)
-            test_sensivity = torch.autograd.grad(test_result, test_fake)[0].pw(2)
+            test_sensivity = torch.autograd.grad(test_result, test_fake)[0].pow(2)
             test_relevance = discriminator.relprop(discriminator.net.relevanceOutput)
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
