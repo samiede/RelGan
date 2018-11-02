@@ -264,15 +264,13 @@ for epoch in range(num_epochs):
         if n_batch % 100 == 0 or n_batch == num_batches:
             test_fake = generator(test_noise)
             test_result = discriminator(test_fake)
-            # test_result.
-            # test_result.backward(retain_variables=True)
-            test_sensivity = torch.autograd.grad(test_result, test_fake)[0].pow(2)
+            # test_sensivity = torch.autograd.grad(test_result, test_fake)[0].pow(2)
             test_relevance = discriminator.relprop(discriminator.net.relevanceOutput)
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
             logger.log_images(
-                test_fake.data, test_sensivity, num_test_samples,
+                test_fake.data, test_relevance, num_test_samples,
                 epoch, n_batch, num_batches
             )
 
