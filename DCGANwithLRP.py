@@ -8,7 +8,7 @@ from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
     NextConvolution, FirstConvolution, Pooling, Dropout, BatchNorm2d
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataset', required=True, help='MNIST | cifar10', default='MNIST')
+parser.add_argument('--dataset', help='MNIST | cifar10', default='MNIST')
 parser.add_argument('--imageSize', type=int, default=64, help='The height/width of the training/output images')
 
 opt = parser.parse_args()
