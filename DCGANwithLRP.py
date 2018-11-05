@@ -7,14 +7,12 @@ from utils import Logger
 from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
     NextConvolution, FirstConvolution, Pooling, Dropout, BatchNorm2d
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', required=True, help='MNIST | cifar10', default='MNIST')
 parser.add_argument('--imageSize', type=int, default=64, help='The height/width of the training/output images')
 
 opt = parser.parse_args()
 print(opt)
-
 
 # CUDA everything
 
@@ -25,6 +23,7 @@ if torch.cuda.is_available():
 else:
     torch.set_default_tensor_type('torch.FloatTensor')
 print(gpu)
+
 
 # Misc. helper functions
 
@@ -60,6 +59,16 @@ def noise(size):
     # noinspection PyUnresolvedReferences
     z = torch.reshape(z, (size, 100, 1, 1))
     return z.to(gpu)
+
+
+def added_gaussian(ins, is_training, stddev=0.2):
+    if is_training:
+        return ins + torch.Tensor(torch.randn(ins.size()).to(gpu) * stddev)
+    return ins
+
+
+def adjust_variance(variance, rate):
+    return variance - rate
 
 
 def discriminator_target(size):
@@ -130,8 +139,8 @@ class DiscriminatorNet(nn.Module):
     def forward(self, x):
         return self.net(x).view(-1, 1).squeeze(1)
 
-    def relprop(self, R):
-        return self.net.relprop(R)
+    def relprop(self):
+        return self.net.relprop()
 
 
 class GeneratorNet(torch.nn.Module):
@@ -211,11 +220,12 @@ test_noise = noise(num_test_samples).detach()
 
 # Training
 
-# How often does the discriminator train on the data before the generator is trained again
-d_steps = 1
+# Additive noise to stabilize Training
+add_noise_var = 1.0
+variance_annealing = 1 / 100
 
+# How many epochs do we train the model?
 num_epochs = 200
-
 for epoch in range(num_epochs):
     for n_batch, (real_batch, _) in enumerate(data_loader):
         print('Batch', n_batch, end='\r')
@@ -223,21 +233,24 @@ for epoch in range(num_epochs):
 
         # Train Discriminator
         discriminator.zero_grad()
-
         y_real = discriminator_target(n).to(gpu)
         y_fake = generator_target(n).to(gpu)
         x_r = real_batch.to(gpu)
 
+        # Add noise to input
+        add_noise_var = adjust_variance(add_noise_var, variance_annealing)
+        x_rn = added_gaussian(x_r, True, add_noise_var)
         # Predict on real data
-        d_prediction_real = discriminator(x_r)
+        d_prediction_real = discriminator(x_rn)
         d_loss_real = loss(d_prediction_real, y_real)
 
         # Create and predict on fake data
         z_ = noise(n).to(gpu)
         x_f = generator(z_).to(gpu)
+        x_fn = added_gaussian(x_f, True, add_noise_var)
 
         # Detach so we don't calculate the gradients here (speed up)
-        d_prediction_fake = discriminator(x_f.detach())
+        d_prediction_fake = discriminator(x_fn.detach())
         d_loss_fake = loss(d_prediction_fake, y_fake)
         d_training_loss = d_loss_real + d_loss_fake
 
@@ -251,7 +264,8 @@ for epoch in range(num_epochs):
         # Generate and predict on fake images as if they were real
         z_ = noise(n).to(gpu)
         x_f = generator(z_)
-        g_prediction_fake = discriminator(x_f)
+        x_fn = added_gaussian(x_f, True, add_noise_var)
+        g_prediction_fake = discriminator(x_fn)
         g_training_loss = loss(g_prediction_fake, y_real)
 
         # Backpropagate and update weights
@@ -262,12 +276,16 @@ for epoch in range(num_epochs):
         logger.log(d_training_loss, g_training_loss, epoch, n_batch, num_batches)
         # Display Progress every few batches
         if n_batch % 100 == 0 or n_batch == num_batches:
+            # Create fake with fixed noise
             test_fake = generator(test_noise)
+            # Classify fake data
             test_result = discriminator(test_fake)
+            # Calculate SA and Relevance
             test_sensivity = torch.autograd.grad(test_result, test_fake)[0].pow(2)
-            test_relevance = discriminator.relprop(discriminator.net.relevanceOutput)
-            # Add up relevance of all color channels
+            test_relevance = discriminator.relprop()
+            # Add up relevance and sensivity of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            test_sensivity = torch.sum(test_sensivity, 1, keepdim=True)
 
             logger.log_images(
                 test_fake.data, test_sensivity, num_test_samples,
