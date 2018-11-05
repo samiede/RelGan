@@ -281,14 +281,14 @@ for epoch in range(num_epochs):
             # Classify fake data
             test_result = discriminator(test_fake)
             # Calculate SA and Relevance
-            test_sensivity = torch.autograd.grad(test_result, test_fake)[0].pow(2)
+            test_sensitivity = torch.autograd.grad(test_result, test_fake)[0].pow(2)
             test_relevance = discriminator.relprop()
             # Add up relevance and sensivity of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
-            test_sensivity = torch.sum(test_sensivity, 1, keepdim=True)
+            test_sensitivity = torch.sum(test_sensitivity, 1, keepdim=True)
 
             logger.log_images(
-                test_fake.data, test_sensivity, num_test_samples,
+                test_fake.data, test_relevance, num_test_samples,
                 epoch, n_batch, num_batches
             )
 
