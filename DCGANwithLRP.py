@@ -67,8 +67,8 @@ def added_gaussian(ins, is_training, stddev=0.2):
     return ins
 
 
-def adjust_variance(variance, rate):
-    return variance - rate
+def adjust_variance(variance, initial_variance, num_updates):
+    return variance - initial_variance/num_updates
 
 
 def discriminator_target(size):
@@ -221,8 +221,8 @@ test_noise = noise(num_test_samples).detach()
 # Training
 
 # Additive noise to stabilize Training
-add_noise_var = 1.0
-variance_annealing = 1 / 100
+initial_additive_noise_var = 0.1
+add_noise_var = 0.1
 
 # How many epochs do we train the model?
 num_epochs = 200
@@ -230,6 +230,7 @@ for epoch in range(num_epochs):
     for n_batch, (real_batch, _) in enumerate(data_loader):
         print('Batch', n_batch, end='\r')
         n = real_batch.size(0)
+        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, 2000)
 
         # Train Discriminator
         discriminator.zero_grad()
@@ -238,7 +239,6 @@ for epoch in range(num_epochs):
         x_r = real_batch.to(gpu)
 
         # Add noise to input
-        add_noise_var = adjust_variance(add_noise_var, variance_annealing)
         x_rn = added_gaussian(x_r, True, add_noise_var)
         # Predict on real data
         d_prediction_real = discriminator(x_rn)
