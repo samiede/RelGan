@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import utils
+import copy
 
 
 class FirstConvolution(nn.Conv2d):
@@ -21,15 +22,21 @@ class FirstConvolution(nn.Conv2d):
     def relprop(self, R):
         iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
         iself.load_state_dict(self.state_dict())
+        # Include positive biases as neurons
+        iself_biases = copy.deepcopy(iself.bias.data)
         iself.bias.data *= 0
 
         nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
         nself.load_state_dict(self.state_dict())
+        # Include positive biases as neurons
+        nself_biases = copy.deepcopy(nself.bias.data)
         nself.bias.data *= 0
         nself.weight.data = torch.min(torch.Tensor(1).zero_(), nself.weight)
 
         pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
         pself.load_state_dict(self.state_dict())
+        # Include positive biases as neurons
+        pself_biases = copy.deepcopy(pself.bias.data)
         pself.bias.data *= 0
         pself.weight.data = torch.max(torch.Tensor(1).zero_(), pself.weight)
 
@@ -38,8 +45,17 @@ class FirstConvolution(nn.Conv2d):
         H = self.X * 0 + utils.highest
 
         iself_f = iself.forward(X)
+        # Expand bias for addition
+        iself_biases = torch.max(torch.Tensor(1).zero_(), iself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(iself_f)
+        iself_f = iself_f + iself_biases
         pself_f = pself.forward(L)
+        # Expand bias for addition
+        pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(pself_f)
+        pself_f = pself_f + pself_biases
         nself_f = nself.forward(H)
+        # Expand bias for addition
+        nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(nself_f)
+        nself_f = nself_f + nself_biases
 
         Z = iself_f - pself_f - nself_f + 1e-9
         S = R / Z
@@ -72,19 +88,30 @@ class NextConvolution(nn.Conv2d):
     def relprop(self, R):
         pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
         pself.load_state_dict(self.state_dict())
+        # Include positive biases as neurons
+        pself_biases = copy.deepcopy(pself.bias.data)
         pself.bias.data *= 0
         pself.weight.data = torch.max(torch.Tensor([1e-9]), pself.weight)
 
         nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
         nself.load_state_dict(self.state_dict())
+        # Include positive biases as neurons
+        nself_biases = copy.deepcopy(pself.bias.data)
         nself.bias.data *= 0
         nself.weight.data = torch.min(torch.Tensor([-1e-9]), nself.weight)
 
         X = self.X + 1e-9
 
         ZA = pself(X)
+        # expand biases for addition
+        pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(ZA)
+        ZA = ZA + pself_biases
         SA = self.alpha * torch.div(R, ZA)
+
         ZB = nself(X)
+        # expand biases for addition
+        nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(ZB)
+        ZB = ZB + nself_biases
         SB = - self.beta * torch.div(R, ZB)
 
         C = torch.autograd.grad(ZA, self.X, SA)[0] + torch.autograd.grad(ZB, self.X, SB)[0]
