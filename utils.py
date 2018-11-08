@@ -58,14 +58,14 @@ class Logger:
             relevance = torch.from_numpy(relevance)
 
         if format == 'NCHW':
-            # images = images.transpose(1, 3)
             relevance = relevance.permute(0, 3, 1, 2)
 
         step = Logger._step(epoch, n_batch, num_batches)
         img_name = '{}/images{}'.format(self.comment, '')
 
         # concat images
-        images = images.repeat(1, 3, 1, 1)
+        if images.size(1) == 1:
+            images = images.repeat(1, 3, 1, 1)
         if torch.cuda.is_available():
             images = images.cuda()
             relevance = relevance.cuda()

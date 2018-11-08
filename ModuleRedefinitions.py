@@ -87,6 +87,9 @@ class NextConvolution(nn.Conv2d):
 
     def relprop(self, R):
 
+        print(type(R))
+        exit()
+
         if type(R) is tuple:
             R, params = R
 
@@ -160,10 +163,13 @@ class BatchNorm2d(nn.BatchNorm2d):
         params = None
         # self.recover(R)
         # return torch.div(R, self.factor).detach()
-        return R, params
+        return R, self.getParams()
 
     # TODO
-    def recover(self, input):
+    def getParams(self):
+        return {'gamma': self.weight, 'var': self.running_var , 'eps': self.eps }
+
+        return (self.weight, self.running_var, self.eps)
         print('input: ', input.shape)
         print('bias:', self.bias.shape)
         print('weight', self.weight.shape)
