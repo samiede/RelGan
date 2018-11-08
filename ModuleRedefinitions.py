@@ -86,6 +86,10 @@ class NextConvolution(nn.Conv2d):
         return output
 
     def relprop(self, R):
+
+        if type(R) is tuple:
+            R, params = R
+
         pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
         pself.load_state_dict(self.state_dict())
         # Include positive biases as neurons
@@ -109,7 +113,7 @@ class NextConvolution(nn.Conv2d):
         SA = self.alpha * torch.div(R, ZA)
 
         ZB = nself(X)
-        # expand biases for addition
+        # expand biases for addition HERE NEGATIVE BIASES? torch.min???
         nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(ZB)
         ZB = ZB + nself_biases
         SB = - self.beta * torch.div(R, ZB)
@@ -126,9 +130,9 @@ class ReLu(nn.ReLU):
 
     def forward(self, input):
         output = super().forward(input)
-        if output.sum().item() == 0:
-            print('Relu input', input),
-            print('Output', output)
+        # if output.sum().item() == 0:
+        #     print('Relu input', input),
+        #     print('Output', output)
         return super().forward(input)
 
     def relprop(self, R):
@@ -153,9 +157,10 @@ class BatchNorm2d(nn.BatchNorm2d):
         return output
 
     def relprop(self, R):
+        params = None
         # self.recover(R)
         # return torch.div(R, self.factor).detach()
-        return R
+        return R, params
 
     # TODO
     def recover(self, input):
