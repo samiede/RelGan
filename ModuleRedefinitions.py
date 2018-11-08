@@ -87,11 +87,6 @@ class NextConvolution(nn.Conv2d):
 
     def relprop(self, R):
 
-        print(type(R))
-        exit()
-
-        if type(R) is tuple:
-            R, params = R
 
         pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
         pself.load_state_dict(self.state_dict())
@@ -163,7 +158,7 @@ class BatchNorm2d(nn.BatchNorm2d):
         params = None
         # self.recover(R)
         # return torch.div(R, self.factor).detach()
-        return R, self.getParams()
+        return R
 
     # TODO
     def getParams(self):
