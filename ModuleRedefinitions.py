@@ -16,8 +16,7 @@ class FirstConvolution(nn.Conv2d):
     def forward(self, input):
         # Input shape: minibatch x in_channels, iH x iW
         self.X = input
-        output = super().forward(input)
-        return output
+        return super().forward(input)
 
     def relprop(self, R):
         iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
@@ -46,15 +45,18 @@ class FirstConvolution(nn.Conv2d):
 
         iself_f = iself.forward(X)
         # Expand bias for addition
-        iself_biases = torch.max(torch.Tensor(1).zero_(), iself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(iself_f)
+        iself_biases = torch.max(torch.Tensor(1).zero_(), iself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+            3).expand_as(iself_f)
         iself_f = iself_f + iself_biases
         pself_f = pself.forward(L)
         # Expand bias for addition
-        pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(pself_f)
+        pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+            3).expand_as(pself_f)
         pself_f = pself_f + pself_biases
         nself_f = nself.forward(H)
         # Expand bias for addition
-        nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(nself_f)
+        nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+            3).expand_as(nself_f)
         nself_f = nself_f + nself_biases
 
         Z = iself_f - pself_f - nself_f + 1e-9
@@ -82,56 +84,111 @@ class NextConvolution(nn.Conv2d):
     def forward(self, input):
         # Input shape: minibatch x in_channels, iH x iW
         self.X = input
-        output = super().forward(input)
-        return output
+        return super().forward(input)
 
     def relprop(self, R):
 
+        # Is the layer before Batch Norm?
+        if type(R) is tuple:
+            R, params = R
 
-        pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
-        pself.load_state_dict(self.state_dict())
-        # Include positive biases as neurons
-        pself_biases = copy.deepcopy(pself.bias.data)
-        pself.bias.data *= 0
-        pself.weight.data = torch.max(torch.Tensor([1e-9]), pself.weight)
+            gamma, var, eps, beta, mean = params['gamma'], params['var'], params['eps'], params['beta'], \
+                                          params['mean']
+            var = torch.div(torch.ones(1), (torch.sqrt(var + eps)))
 
-        nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
-        nself.load_state_dict(self.state_dict())
-        # Include positive biases as neurons
-        nself_biases = copy.deepcopy(pself.bias.data)
-        nself.bias.data *= 0
-        nself.weight.data = torch.min(torch.Tensor([-1e-9]), nself.weight)
+            # Positive weights
+            pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
+            pself.load_state_dict(self.state_dict())
 
-        X = self.X + 1e-9
+            # Include positive biases as neurons to normalize over
+            pself_biases = copy.deepcopy(pself.bias.data)
+            pself_biases = beta + gamma * (pself_biases - mean) * gamma
+            pself.bias.data *= 0
+            pself.weight.data = pself.weight.data * gamma.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(pself.weight) \
+                                * var.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(pself.weight)
+            pself.weight.data = torch.max(torch.Tensor([1e-9]), pself.weight)
 
-        ZA = pself(X)
-        # expand biases for addition
-        pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(ZA)
-        ZA = ZA + pself_biases
-        SA = self.alpha * torch.div(R, ZA)
+            # Negative weights
+            nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
+            nself.load_state_dict(self.state_dict())
 
-        ZB = nself(X)
-        # expand biases for addition HERE NEGATIVE BIASES? torch.min???
-        nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(ZB)
-        ZB = ZB + nself_biases
-        SB = - self.beta * torch.div(R, ZB)
+            # Include positive biases as neurons to normalize over
+            nself_biases = copy.deepcopy(pself.bias.data)
+            nself_biases = beta + gamma * (nself_biases - mean) * gamma
+            nself.bias.data *= 0
+            nself.weight.data = nself.weight.data * gamma.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(nself.weight)\
+                                * var.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(nself.weight)
+            nself.weight.data = torch.min(torch.Tensor([-1e-9]), nself.weight)
 
-        C = torch.autograd.grad(ZA, self.X, SA)[0] + torch.autograd.grad(ZB, self.X, SB)[0]
-        R = self.X * C
-        return R
+            X = self.X + 1e-9
+
+            ZA = pself(X)
+            # expand biases for addition
+            pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+                3).expand_as(ZA)
+            ZA = ZA + pself_biases
+            SA = self.alpha * torch.div(R, ZA)
+
+            ZB = nself(X)
+            # expand biases for addition HERE NEGATIVE BIASES? torch.min???
+            nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+                3).expand_as(ZB)
+            ZB = ZB + nself_biases
+            SB = - self.beta * torch.div(R, ZB)
+
+            C = torch.autograd.grad(ZA, self.X, SA)[0] + torch.autograd.grad(ZB, self.X, SB)[0]
+            R = self.X * C
+
+        # If not, continue as usual
+        else:
+
+            pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
+            pself.load_state_dict(self.state_dict())
+            # Include positive biases as neurons
+            pself_biases = copy.deepcopy(pself.bias.data)
+            pself.bias.data *= 0
+            pself.weight.data = torch.max(torch.Tensor([1e-9]), pself.weight)
+
+            nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
+            nself.load_state_dict(self.state_dict())
+            # Include positive biases as neurons
+            nself_biases = copy.deepcopy(pself.bias.data)
+            nself.bias.data *= 0
+            nself.weight.data = torch.min(torch.Tensor([-1e-9]), nself.weight)
+
+            X = self.X + 1e-9
+
+            ZA = pself(X)
+            # expand biases for addition
+            pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+                3).expand_as(ZA)
+            ZA = ZA + pself_biases
+            SA = self.alpha * torch.div(R, ZA)
+
+            ZB = nself(X)
+            # expand biases for addition HERE NEGATIVE BIASES? torch.min???
+            nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+                3).expand_as(ZB)
+            ZB = ZB + nself_biases
+            SB = - self.beta * torch.div(R, ZB)
+
+            C = torch.autograd.grad(ZA, self.X, SA)[0] + torch.autograd.grad(ZB, self.X, SB)[0]
+            R = self.X * C
+
+        return R.detach()
 
 
 class ReLu(nn.ReLU):
 
-    def __init__(self, inplace=False):
-        super().__init__(inplace=inplace)
-
-    def forward(self, input):
-        output = super().forward(input)
-        # if output.sum().item() == 0:
-        #     print('Relu input', input),
-        #     print('Output', output)
-        return super().forward(input)
+    # def __init__(self, inplace=False):
+    #     super().__init__(inplace=inplace)
+    #
+    # def forward(self, input):
+    #     output = super().forward(input)
+    #     # if output.sum().item() == 0:
+    #     #     print('Relu input', input),
+    #     #     print('Output', output)
+    #     return super().forward(input)
 
     def relprop(self, R):
         return R
@@ -139,67 +196,22 @@ class ReLu(nn.ReLU):
 
 class BatchNorm2d(nn.BatchNorm2d):
 
-    def __init__(self, num_features):
-        super().__init__(num_features)
-        self.factor = None
-
-    def forward(self, input):
-        X = input
-        output = super().forward(input)
-        self.factor = torch.div(output, X)
-        self.factor.detach()
-        # recovered_x = torch.div(output, self.factor)
-        # self.recover(input)
-        # print('recovered: ', X.sum().item() == recovered_x.sum().item(), self)
-        # print(self.factor)
-        return output
-
     def relprop(self, R):
-        params = None
-        # self.recover(R)
-        # return torch.div(R, self.factor).detach()
-        return R
+        return R, self.getParams()
 
-    # TODO
     def getParams(self):
-        return {'gamma': self.weight, 'var': self.running_var , 'eps': self.eps }
-
-        return (self.weight, self.running_var, self.eps)
-        print('input: ', input.shape)
-        print('bias:', self.bias.shape)
-        print('weight', self.weight.shape)
-        self.expand(self.weight, input.size)
-        print('var', self.running_var.shape)
-        exit()
-        # denom = input - bias
-        # shift = torch.div(input - self.bias, self.weight)
-        # factor = torch.sqrt(self.running_var + self.eps)
-        # addendum = self.running_mean
-        # return shift * factor + addendum
-
-    def expand(self, input, shape):
-        expanded = torch.Tensor(shape(2), shape(3))
-        expanded.fill_(input[0].item())
-        torch.unsqueeze(expanded, 1)
-        print('Exp', expanded.shape)
-        for scalar in input[1:]:
-            fill = torch.Tensor(shape(2), shape(3))
-            fill.fill_(scalar.item())
-            print(fill.shape)
-            print('Fill', fill)
-            torch.unsqueeze(fill, 0)
-            expanded = torch.stack((expanded, fill), 0)
-            print('Expanded', expanded.shape)
+        return {'gamma': copy.deepcopy(self.weight), 'var': copy.deepcopy(self.running_var),
+                'eps': copy.deepcopy(self.eps), 'beta': copy.deepcopy(self.bias), 'mean': copy.deepcopy(self.running_mean)}
 
 
 class Dropout(nn.Dropout):
-
-    def __init__(self, p=0.5, inplace=False):
-        super().__init__(p, inplace)
-
-    def forward(self, input):
-        output = super().forward(input)
-        return super().forward(input)
+    #
+    # def __init__(self, p=0.5, inplace=False):
+    #     super().__init__(p, inplace)
+    #
+    # def forward(self, input):
+    #     output = super().forward(input)
+    #     return super().forward(input)
 
     def relprop(self, R):
         return R
@@ -233,11 +245,11 @@ class RelevanceNet(nn.Sequential):
 
 
 class Layer(nn.Sequential):
-    def __init__(self, *args):
-        super().__init__(*args)
-
-    def forward(self, input):
-        return super().forward(input)
+    # def __init__(self, *args):
+    #     super().__init__(*args)
+    #
+    # def forward(self, input):
+    #     return super().forward(input)
 
     def relprop(self, R):
         for layer in self[::-1]:
