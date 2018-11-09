@@ -139,7 +139,6 @@ netG = Generator(ngpu).to(device)
 netG.apply(weights_init)
 if opt.netG != '':
     netG.load_state_dict(torch.load(opt.netG))
-print(netG)
 
 
 class Discriminator(nn.Module):
@@ -175,10 +174,6 @@ class Discriminator(nn.Module):
         if input.is_cuda and self.ngpu > 1:
             output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
         else:
-            print('Input', input[0])
-            x = self.first_r(self.first(input))
-            print('first layer shape', x.shape)
-            print(x)
             output = self.main(input)
 
         return output.view(-1, 1).squeeze(1)
@@ -188,7 +183,6 @@ netD = Discriminator(ngpu).to(device)
 netD.apply(weights_init)
 if opt.netD != '':
     netD.load_state_dict(torch.load(opt.netD))
-print(netD)
 
 criterion = nn.BCELoss()
 
@@ -210,10 +204,6 @@ for epoch in range(opt.niter):
         real_cpu = data[0].to(device)
         batch_size = real_cpu.size(0)
         label = torch.full((batch_size,), real_label, device=device)
-
-        print('real', real_cpu.shape)
-        exit()
-
         output = netD(real_cpu)
         errD_real = criterion(output, label)
         errD_real.backward()
