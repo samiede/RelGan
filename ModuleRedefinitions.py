@@ -131,7 +131,7 @@ class NextConvolution(nn.Conv2d):
 
             ZB = nself(X)
             # expand biases for addition HERE NEGATIVE BIASES? torch.min???
-            nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+            nself_biases = torch.min(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
                 3).expand_as(ZB)
             ZB = ZB + nself_biases
             SB = - self.beta * torch.div(R, ZB)
@@ -167,7 +167,7 @@ class NextConvolution(nn.Conv2d):
 
             ZB = nself(X)
             # expand biases for addition HERE NEGATIVE BIASES? torch.min???
-            nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+            nself_biases = torch.min(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
                 3).expand_as(ZB)
             ZB = ZB + nself_biases
             SB = - self.beta * torch.div(R, ZB)

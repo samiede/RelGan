@@ -68,7 +68,7 @@ def added_gaussian(ins, is_training, stddev=0.2):
 
 
 def adjust_variance(variance, initial_variance, num_updates):
-    return variance - initial_variance/num_updates
+    return variance - initial_variance / num_updates
 
 
 def discriminator_target(size):
@@ -178,6 +178,7 @@ class GeneratorNet(torch.nn.Module):
                 nn.ConvTranspose2d(d * 2, d, 4, 2, 1),
                 nn.BatchNorm2d(d),
                 nn.LeakyReLU(0.2)
+
             ),
             Layer(
                 #               C_in, c_out,k, s, p
@@ -232,7 +233,7 @@ for epoch in range(num_epochs):
         n = real_batch.size(0)
         add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, 2000)
 
-        # Train Discriminator
+        # ####### Train Discriminator ########
         discriminator.zero_grad()
         y_real = discriminator_target(n).to(gpu)
         y_fake = generator_target(n).to(gpu)
@@ -247,6 +248,8 @@ for epoch in range(num_epochs):
         # Create and predict on fake data
         z_ = noise(n).to(gpu)
         x_f = generator(z_).to(gpu)
+        print(x_f.shape)
+        exit()
         x_fn = added_gaussian(x_f, True, add_noise_var)
 
         # Detach so we don't calculate the gradients here (speed up)
@@ -258,7 +261,7 @@ for epoch in range(num_epochs):
         d_training_loss.backward()
         d_optimizer.step()
 
-        # Train Generator
+        # ####### Train Generator ########
         generator.zero_grad()
 
         # Generate and predict on fake images as if they were real
