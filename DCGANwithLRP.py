@@ -1,4 +1,5 @@
 import argparse
+import os
 import torch
 from torch import nn, optim
 from torchvision import transforms, datasets
@@ -10,9 +11,21 @@ from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', help='MNIST | cifar10', default='MNIST')
 parser.add_argument('--imageSize', type=int, default=64, help='The height/width of the training/output images')
+parser.add_argument('--netf', default='./Networks', help='Folder to save model checkpoints')
+parser.add_argument('--netG', default='', help="Path to load generator (continue training or application)")
+parser.add_argument('--netD', default='', help="Path to load discriminator (continue training or application)")
+parser.add_argument('--ngd', default=64, type=int, help='Factor of generator layer depth')
+parser.add_argument('--ndd', default=64, type=int, help='Factor of discriminator layer depth')
 
 opt = parser.parse_args()
+ngd = int(opt.ngd)
+ndd = int(opt.ndd)
 print(opt)
+
+try:
+    os.makedirs(opt.outf)
+except OSError:
+    pass
 
 # CUDA everything
 
@@ -105,7 +118,7 @@ class DiscriminatorNet(nn.Module):
     Three hidden-layer discriminative neural network
     """
 
-    def __init__(self, d=128):
+    def __init__(self, d=ngd):
         super(DiscriminatorNet, self).__init__()
 
         self.net = RelevanceNet(
@@ -148,7 +161,7 @@ class GeneratorNet(torch.nn.Module):
     A three hidden-layer generative neural network
     """
 
-    def __init__(self, input_features=100, d=128):
+    def __init__(self, input_features=100, d=ngd):
         super(GeneratorNet, self).__init__()
 
         self.main = nn.Sequential(
@@ -299,3 +312,6 @@ for epoch in range(num_epochs):
                 epoch, num_epochs, n_batch, num_batches,
                 d_training_loss, g_training_loss, d_prediction_real, d_prediction_fake
             )
+
+    torch.save(generator.state_dict(), '%s/generator_epoch_%d.pth' % (opt.netf, epoch))
+    torch.save(discriminator.state_dict(), '%s/discriminator_epoch_%d.pth' % (opt.netf, epoch))
