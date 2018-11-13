@@ -261,7 +261,6 @@ for epoch in range(num_epochs):
         # Create and predict on fake data
         z_ = noise(n).to(gpu)
         x_f = generator(z_).to(gpu)
-        print(x_f.shape)
         x_fn = added_gaussian(x_f, True, add_noise_var)
 
         # Detach so we don't calculate the gradients here (speed up)
