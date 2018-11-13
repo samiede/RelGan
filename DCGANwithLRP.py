@@ -23,7 +23,7 @@ ndd = int(opt.ndd)
 print(opt)
 
 try:
-    os.makedirs(opt.outf)
+    os.makedirs(opt.netf)
 except OSError:
     pass
 
@@ -262,7 +262,6 @@ for epoch in range(num_epochs):
         z_ = noise(n).to(gpu)
         x_f = generator(z_).to(gpu)
         print(x_f.shape)
-        exit()
         x_fn = added_gaussian(x_f, True, add_noise_var)
 
         # Detach so we don't calculate the gradients here (speed up)
