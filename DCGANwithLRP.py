@@ -3,14 +3,14 @@ import os
 import torch
 from torch import nn, optim
 from torchvision import transforms, datasets
-import utils
 from utils import Logger
+import GeneratorDefinitions as gd
+import DiscriminatorDefinitions as dd
 from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
     NextConvolution, FirstConvolution, Pooling, Dropout, BatchNorm2d
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', help='MNIST | cifar10', default='MNIST')
-parser.add_argument('--imageSize', type=int, default=64, help='The height/width of the training/output images')
 parser.add_argument('--netf', default='./Networks', help='Folder to save model checkpoints')
 parser.add_argument('--netG', default='', help="Path to load generator (continue training or application)")
 parser.add_argument('--netD', default='', help="Path to load discriminator (continue training or application)")
@@ -46,7 +46,7 @@ def load_dataset():
         return datasets.MNIST(root=out_dir, train=True, download=True,
                               transform=transforms.Compose(
                                   [
-                                      transforms.Resize(opt.imageSize),
+                                      transforms.Resize(64),
                                       transforms.ToTensor(),
                                       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                   ]
@@ -56,10 +56,32 @@ def load_dataset():
         out_dir = './dataset/cifar10'
         return datasets.CIFAR10(root=out_dir, download=True, train=True,
                                 transform=transforms.Compose([
-                                    transforms.Resize(opt.imageSize),
+                                    transforms.Resize(32),
                                     transforms.ToTensor(),
                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                 ])), 3
+
+    raise ValueError('No valid dataset found in {}'.format(opt.dataset))
+
+
+def init_discriminator():
+    if opt.dataset == 'MNIST':
+        return dd.MNISTDiscriminatorNet(ndd, nc)
+
+    elif opt.dataset == 'cifar10':
+        return dd.CIFARDiscriminatorNet(96, nc)
+
+    raise ValueError('No valid dataset found in {}'.format(opt.dataset))
+
+
+def init_generator():
+    if opt.dataset == 'MNIST':
+        return gd.MNISTGeneratorNet(ngd, nc)
+
+    elif opt.dataset == 'cifar10':
+        return gd.CIFARGeneratorNet(ngd, nc)
+
+    raise ValueError('No valid dataset found in {}'.format(opt.dataset))
 
 
 def noise(size):
@@ -89,7 +111,7 @@ def discriminator_target(size):
     Tensor containing ones, with shape = size
     """
     # noinspection PyUnresolvedReferences
-    return torch.Tensor(size).uniform_(0.7, 1.2)
+    return torch.Tensor(size).uniform_(0.9, 1.1)
 
 
 def generator_target(size):
@@ -99,7 +121,8 @@ def generator_target(size):
     :return: zeros tensor
     """
     # noinspection PyUnresolvedReferences
-    return torch.Tensor(size).uniform_(0, 0.3)
+    return torch.Tensor(size).zero_()
+    # return torch.Tensor(size).uniform_(0, 0.3)
 
 
 def weight_init(m):
@@ -109,99 +132,6 @@ def weight_init(m):
     # if type(m) == BatchNorm2d:
     #     m.weight.data.normal_(1.0, 0.02)
     #     m.bias.data.zero_()
-
-
-# Network Definitions
-
-class DiscriminatorNet(nn.Module):
-    """
-    Three hidden-layer discriminative neural network
-    """
-
-    def __init__(self, d=ngd):
-        super(DiscriminatorNet, self).__init__()
-
-        self.net = RelevanceNet(
-            Layer(  # Input Layer
-                FirstConvolution(nc, d, 4, stride=2, padding=1),
-                PropReLu(),
-            ),
-            Layer(
-                NextConvolution(d, 2 * d, 4, stride=2, padding=1),
-                BatchNorm2d(2 * d),
-                PropReLu(),
-            ),
-            Layer(
-                NextConvolution(2 * d, 4 * d, 4, stride=2, padding=1),
-                BatchNorm2d(4 * d),
-                PropReLu(),
-            ),
-            Layer(
-                NextConvolution(4 * d, 8 * d, 4, stride=2, padding=1),
-                BatchNorm2d(8 * d),
-                PropReLu(),
-            ),
-            Layer(  # Output Layer
-                NextConvolution(8 * d, 1, 4, stride=1, padding=0),
-                nn.Sigmoid()
-            )
-        )
-
-        self.optimizer = optim.Adam(self.parameters(), lr=0.0002)
-
-    def forward(self, x):
-        return self.net(x).view(-1, 1).squeeze(1)
-
-    def relprop(self):
-        return self.net.relprop()
-
-
-class GeneratorNet(torch.nn.Module):
-    """
-    A three hidden-layer generative neural network
-    """
-
-    def __init__(self, input_features=100, d=ngd):
-        super(GeneratorNet, self).__init__()
-
-        self.main = nn.Sequential(
-            Layer(
-                #                   Channel_in,     c_out, k, s, p
-                nn.ConvTranspose2d(input_features, d * 8, 4, 1, 0),
-                nn.BatchNorm2d(d * 8),
-                nn.LeakyReLU(0.2)
-                # state size = 100 x 1024 x 4 x 4
-            ),
-            Layer(
-                #                   C_in, c_out,k, s, p
-                nn.ConvTranspose2d(d * 8, d * 4, 4, 2, 1),
-                nn.BatchNorm2d(d * 4),
-                nn.LeakyReLU(0.2)
-                # state size = 100 x 512 x 8 x 8
-            ),
-            Layer(
-                #                C_in, c_out,k, s, p
-                nn.ConvTranspose2d(d * 4, d * 2, 4, 2, 1),
-                nn.BatchNorm2d(d * 2),
-                nn.LeakyReLU(0.2)
-                # state size = 100 x 256 x 16 x 16
-            ),
-            Layer(
-                #                C_in, c_out,k, s, p
-                nn.ConvTranspose2d(d * 2, d, 4, 2, 1),
-                nn.BatchNorm2d(d),
-                nn.LeakyReLU(0.2)
-
-            ),
-            Layer(
-                #               C_in, c_out,k, s, p
-                nn.ConvTranspose2d(d, nc, 4, 2, 1),
-                nn.Tanh()
-            )
-        )
-
-    def forward(self, x):
-        return self.main(x)
 
 
 # Create Logger instance
@@ -217,8 +147,8 @@ data_loader = torch.utils.data.DataLoader(dataset, batch_size=128, shuffle=True)
 num_batches = len(data_loader)
 
 # Create networks
-discriminator = DiscriminatorNet().to(gpu)
-generator = GeneratorNet().to(gpu)
+discriminator = init_discriminator().to(gpu)
+generator = init_generator().to(gpu)
 
 discriminator.apply(weight_init)
 generator.apply(weight_init)
@@ -291,7 +221,9 @@ for epoch in range(num_epochs):
         # Display Progress every few batches
         if n_batch % 100 == 0 or n_batch == num_batches:
             # Create fake with fixed noise
+            generator.eval()
             test_fake = generator(test_noise)
+            generator.train()
             # Classify fake data
             test_result = discriminator(test_fake)
             # Calculate SA and Relevance
