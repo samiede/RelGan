@@ -236,7 +236,7 @@ for epoch in range(num_epochs):
             d_prediction_fake = discriminator(x_fn.detach())
             d_loss_fake = loss(d_prediction_fake, y_fake)
             d_loss_fake.backward(fake_grad())
-            d_training_loss = d_loss_real + d_loss_fake
+            d_training_loss = d_loss_real - d_loss_fake
 
             # Backpropagate and update weights
             # d_training_loss.backward()
