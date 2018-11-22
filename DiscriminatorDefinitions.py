@@ -29,6 +29,8 @@ class MNISTDiscriminatorNet(DiscriminatorNet):
     def __init__(self, d, nc):
         super(MNISTDiscriminatorNet, self).__init__(d, nc)
 
+        self.loss = nn.BCELoss()
+
         self.net = RelevanceNet(
             Layer(  # Input Layer
                 FirstConvolution(nc, d, 4, stride=2, padding=1),
@@ -56,58 +58,44 @@ class MNISTDiscriminatorNet(DiscriminatorNet):
         )
 
 
-class CIFARDiscriminatorNet(DiscriminatorNet):
+class WGANDiscriminatorNet(DiscriminatorNet):
 
-    def __init__(self, d, nc):
-        super(CIFARDiscriminatorNet, self).__init__(d, nc)
+    def __init__(self, ndf, nc, imageSize, n_extra_layers=0):
+        super(WGANDiscriminatorNet, self).__init__(ndf, nc)
 
-        self.net = RelevanceNet(
-            Layer(
-                Dropout(0.2),
-                weight_norm(FirstConvolution(in_channels=nc, out_channels=d, kernel_size=3, stride=1, padding=1),
-                            'weight'),
-                PropReLu(),
-            ),
-            Layer(
-                weight_norm(NextConvolution(in_channels=d, out_channels=d, kernel_size=3, stride=1, padding=1),
-                            'weight'),
-                PropReLu(),
-                Dropout(0.2),
+        net = RelevanceNet()
+        net.add_module('initial-conv{0}-{1}'.format(nc, ndf),
+                        FirstConvolution(nc, ndf, 4, 2, 1))
+        net.add_module('initial-relu{0}'.format(ndf),
+                        PropReLu(inplace=True))
+        csize, cndf = imageSize / 2, ndf
 
-            ),
-            Layer(
-                weight_norm(NextConvolution(in_channels=d, out_channels=2 * d, kernel_size=3, stride=1, padding=1),
-                            'weight'),
-                PropReLu(),
-            ),
-            Layer(
-                weight_norm(NextConvolution(in_channels=2 * d, out_channels=2 * d, kernel_size=3, stride=2, padding=1),
-                            'weight'),
-                PropReLu(),
-                Dropout(0.2),
+        # Extra layers
+        for t in range(n_extra_layers):
+            net.add_module('extra-layers-{0}-{1}-conv'.format(t, cndf),
+                            NextConvolution(cndf, cndf, 3, 1, 1))
+            net.add_module('extra-layers-{0}-{1}-batchnorm'.format(t, cndf),
+                            BatchNorm2d(cndf))
+            net.add_module('extra-layers-{0}-{1}-relu'.format(t, cndf),
+                            PropReLu(inplace=True))
 
-            ),
-            Layer(
-                weight_norm(NextConvolution(in_channels=2 * d, out_channels=2 * d, kernel_size=3, stride=1, padding=0),
-                            'weight'),
-                PropReLu(),
-            ),
-            Layer(
-                weight_norm(NextConvolution(in_channels=2 * d, out_channels= 2 * d, kernel_size=1, stride=1, padding=0),
-                            'weight'),
-                PropReLu(),
-            ),
-            Layer(
-                weight_norm(NextConvolution(in_channels=2 * d, out_channels=2 * d, kernel_size=1, stride=1, padding=0),
-                            'weight'),
-                PropReLu(),
-            ),
-            Layer(
-                Pooling(kernel_size=14, name='global'),
-                NextLinear(in_features=2 * d, out_features=10),
-            ),
-            Layer(
-                NextLinear(in_features=10, out_features=1),
-                nn.Sigmoid()
-            )
-        )
+        while csize > 4:
+            in_feat = cndf
+            out_feat = cndf * 2
+            net.add_module('pyramid-{0}-{1}-conv'.format(in_feat, out_feat),
+                            NextConvolution(in_feat, out_feat, 4, 2, 1))
+            net.add_module('pyramid-{0}-batchnorm'.format(out_feat),
+                            BatchNorm2d(out_feat))
+            net.add_module('pyramid-{0}-relu'.format(out_feat),
+                           PropReLu(inplace=True))
+            cndf = cndf * 2
+            csize = csize / 2
+
+        # We take relevance here
+        # state size. K x 4 x 4
+        # Global average to single output
+        net.add_module('final-{0}-{1}-conv'.format(cndf, 1),
+                        NextConvolution(cndf, 1, 4, 1, 0))
+        self.net = net
+
+

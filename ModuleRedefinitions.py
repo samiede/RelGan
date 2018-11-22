@@ -2,8 +2,6 @@ import torch
 from torch import nn
 import utils
 import copy
-from torch.nn.utils import weight_norm
-from torch.nn.utils.weight_norm import WeightNorm, remove_weight_norm
 
 
 class FirstConvolution(nn.Conv2d):
@@ -21,10 +19,6 @@ class FirstConvolution(nn.Conv2d):
         return super().forward(input)
 
     def relprop(self, R):
-
-        for k, hook in self._forward_pre_hooks.items():
-            if isinstance(hook, WeightNorm) and hook.name == 'weight':
-                remove_weight_norm(self)
 
         if type(R) is tuple:
 
@@ -144,7 +138,6 @@ class FirstConvolution(nn.Conv2d):
 
             R = X * iself_b - L * pself_b - H * nself_b
 
-        weight_norm(self, 'weight')
         return R.detach()
 
 
@@ -165,10 +158,6 @@ class NextConvolution(nn.Conv2d):
         return super().forward(input)
 
     def relprop(self, R):
-
-        for k, hook in self._forward_pre_hooks.items():
-            if isinstance(hook, WeightNorm) and hook.name == 'weight':
-                remove_weight_norm(self)
 
         # Is the layer before Batch Norm?
         if type(R) is tuple:
@@ -257,7 +246,6 @@ class NextConvolution(nn.Conv2d):
             C = torch.autograd.grad(ZA, self.X, SA)[0] + torch.autograd.grad(ZB, self.X, SB)[0]
             R = self.X * C
 
-        weight_norm(self, 'weight')
         return R.detach()
 
 
@@ -393,7 +381,6 @@ class NextLinear(nn.Linear):
         C = torch.matmul(S, V)
         R = self.X * C
 
-        weight_norm(self)
         return R
 
 

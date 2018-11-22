@@ -6,6 +6,7 @@ from tensorboardX import SummaryWriter
 from IPython import display
 import torch
 from matplotlib import pyplot as plt
+
 if torch.cuda.is_available():
     plt.switch_backend('agg')
 import PIL, PIL.Image
@@ -112,13 +113,14 @@ class Logger:
         Logger._make_dir(out_dir)
         fig.savefig('{}/{}_epoch_{}_batch_{}.png'.format(out_dir, comment, epoch, n_batch))
 
-    def display_status(self, epoch, num_epochs, n_batch, num_batches, d_error, g_error, d_pred_real, d_pred_fake):
+    @staticmethod
+    def display_status(epoch, num_epochs, n_batch, num_batches, d_error, g_error, d_pred_real, d_pred_fake):
 
         var_class = torch.Tensor
         if type(d_error.data) == var_class:
-            d_error = d_error.data.cpu().numpy()
+            d_error = d_error.detach().cpu().item()
         if type(g_error.data) == var_class:
-            g_error = g_error.data.cpu().numpy()
+            g_error = g_error.detach().cpu().item()
         if type(d_pred_real.data) == var_class:
             d_pred_real = d_pred_real.data
         if type(d_pred_fake.data) == var_class:
@@ -129,6 +131,7 @@ class Logger:
         )
         print('Discriminator Loss: {:.4f}, Generator Loss: {:.4f}'.format(d_error, g_error))
         print('D(x): {:.4f}, D(G(z)): {:.4f} \n'.format(d_pred_real.mean(), d_pred_fake.mean()))
+
     def save_models(self, generator, discriminator, epoch):
         out_dir = './data/models/{}'.format(self.data_subdir)
         Logger._make_dir(out_dir)

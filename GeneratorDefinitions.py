@@ -11,41 +11,41 @@ from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
 
 class MNISTGeneratorNet(torch.nn.Module):
 
-    def __init__(self, d, nc, input_features=100):
+    def __init__(self, ngf, nc, input_features=100):
         super(MNISTGeneratorNet, self).__init__()
 
         self.main = nn.Sequential(
             Layer(
                 #                   Channel_in,     c_out, k, s, p
-                nn.ConvTranspose2d(input_features, d * 8, 4, 1, 0),
-                nn.BatchNorm2d(d * 8),
+                nn.ConvTranspose2d(input_features, ngf * 8, 4, 1, 0),
+                nn.BatchNorm2d(ngf * 8),
                 nn.LeakyReLU(0.2)
                 # state size = 100 x 1024 x 4 x 4
             ),
             Layer(
                 #                   C_in, c_out,k, s, p
-                nn.ConvTranspose2d(d * 8, d * 4, 4, 2, 1),
-                nn.BatchNorm2d(d * 4),
+                nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1),
+                nn.BatchNorm2d(ngf * 4),
                 nn.LeakyReLU(0.2)
                 # state size = 100 x 512 x 8 x 8
             ),
             Layer(
                 #                C_in, c_out,k, s, p
-                nn.ConvTranspose2d(d * 4, d * 2, 4, 2, 1),
-                nn.BatchNorm2d(d * 2),
+                nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1),
+                nn.BatchNorm2d(ngf * 2),
                 nn.LeakyReLU(0.2)
                 # state size = 100 x 256 x 16 x 16
             ),
             Layer(
                 #                C_in, c_out,k, s, p
-                nn.ConvTranspose2d(d * 2, d, 4, 2, 1),
-                nn.BatchNorm2d(d),
+                nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1),
+                nn.BatchNorm2d(ngf),
                 nn.LeakyReLU(0.2)
 
             ),
             Layer(
                 #               C_in, c_out,k, s, p
-                nn.ConvTranspose2d(d, nc, 4, 2, 1),
+                nn.ConvTranspose2d(ngf, nc, 4, 2, 1),
                 nn.Tanh()
             )
         )
@@ -54,34 +54,52 @@ class MNISTGeneratorNet(torch.nn.Module):
         return self.main(x)
 
 
-class CIFARGeneratorNet(torch.nn.Module):
+class WGANGeneratorNet(torch.nn.Module):
 
-    def __init__(self, d, nc, input_features=100):
-        super(CIFARGeneratorNet, self).__init__()
+    def __init__(self, ngf, nc, imageSize, input_features=100, n_extra_layers=0):
+        super(WGANGeneratorNet, self).__init__()
+        assert imageSize % 16 == 0, "imageSize has to be a multiple of 16"
 
-        self.main = nn.Sequential(
-            Layer(
-                FlattenToLinearLayer(),
-                nn.Linear(in_features=input_features, out_features=512 * 4 * 4),
-                nn.BatchNorm1d(512 * 4 * 4),
-                nn.LeakyReLU(0.2),
-            ),
-            ReshapeLayer(filters=512, height=4, width=4),
-            Layer(
-                nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=5, stride=2, padding=1),
-                nn.LeakyReLU(0.2),
-                nn.BatchNorm2d(256),
-            ),
-            Layer(
-                nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=5, stride=2, padding=1),
-                nn.LeakyReLU(0.2),
-                nn.BatchNorm2d(128),
-            ),
-            Layer(
-                weight_norm(nn.ConvTranspose2d(128, nc, 5, 2, 1), 'weight'),
-                nn.Tanh()
-            )
-        )
+        cngf, tisize = ngf // 2, 4
+        while tisize != imageSize:
+            cngf = cngf * 2
+            tisize = tisize * 2
 
-    def forward(self, x):
-        return self.main(x)
+        main = nn.Sequential()
+
+        main.add_module('initial-{0}-{1}-convt'.format(input_features, cngf),
+                        nn.ConvTranspose2d(input_features, cngf, 4, 1, 0, bias=False))
+        main.add_module('initial-{0}-batchnorm'.format(cngf),
+                        nn.BatchNorm2d(cngf))
+        main.add_module('initial-{0}-relu'.format(cngf),
+                        nn.ReLU(True))
+
+        csize, cndf = 4, cngf
+        while csize < imageSize // 2:
+            main.add_module('pyramid-{0}-{1}-convt'.format(cngf, cngf // 2),
+                            nn.ConvTranspose2d(cngf, cngf // 2, 4, 2, 1, bias=False))
+            main.add_module('pyramid-{0}-batchnorm'.format(cngf // 2),
+                            nn.BatchNorm2d(cngf // 2))
+            main.add_module('pyramid-{0}-relu'.format(cngf // 2),
+                            nn.ReLU(True))
+            cngf = cngf // 2
+            csize = csize * 2
+
+        # Extra layers
+        for t in range(n_extra_layers):
+            main.add_module('extra-layers-{0}-{1}-conv'.format(t, cngf),
+                            nn.Conv2d(cngf, cngf, 3, 1, 1, bias=False))
+            main.add_module('extra-layers-{0}-{1}-batchnorm'.format(t, cngf),
+                            nn.BatchNorm2d(cngf))
+            main.add_module('extra-layers-{0}-{1}-relu'.format(t, cngf),
+                            nn.ReLU(True))
+
+        main.add_module('final-{0}-{1}-convt'.format(cngf, nc),
+                        nn.ConvTranspose2d(cngf, nc, 4, 2, 1, bias=False))
+        main.add_module('final-{0}-tanh'.format(nc),
+                        nn.Tanh())
+        self.main = main
+
+    def forward(self, input):
+
+        return self.main(input)
