@@ -208,14 +208,21 @@ for epoch in range(num_epochs):
         # ####### Train Discriminator ########
         #
         # ####### Train Discriminator ########
+
         d_training_loss = None
         d_prediction_real = None
         d_prediction_fake = None
         y_real = None
 
-        for i in range(opt.Diters):
+        if(epoch < 25) or epoch % 500 == 0:
+            Diters = 100
+        else:
+            Diters = opt.Diters
+
+        for i in range(Diters):
 
             discriminator.zero_grad()
+
             y_real = discriminator_target(n).to(gpu)
             y_fake = generator_target(n).to(gpu)
             x_r = real_batch.to(gpu)
