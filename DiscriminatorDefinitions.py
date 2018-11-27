@@ -65,29 +65,29 @@ class WGANDiscriminatorNet(DiscriminatorNet):
 
         net = RelevanceNet()
         net.add_module('initial-conv{0}-{1}'.format(nc, ndf),
-                        FirstConvolution(nc, ndf, 4, 2, 1))
+                        nn.Conv2d(nc, ndf, 4, 2, 1))
         net.add_module('initial-relu{0}'.format(ndf),
-                        PropReLu(inplace=True))
+                        nn.LeakyReLU(0.2, inplace=True))
         csize, cndf = imageSize / 2, ndf
 
         # Extra layers
         for t in range(n_extra_layers):
             net.add_module('extra-layers-{0}-{1}-conv'.format(t, cndf),
-                            NextConvolution(cndf, cndf, 3, 1, 1))
+                            nn.Conv2d(cndf, cndf, 3, 1, 1))
             net.add_module('extra-layers-{0}-{1}-batchnorm'.format(t, cndf),
-                            BatchNorm2d(cndf))
+                            nn.BatchNorm2d(cndf))
             net.add_module('extra-layers-{0}-{1}-relu'.format(t, cndf),
-                            PropReLu(inplace=True))
+                            nn.LeakyReLU(0.2, inplace=True))
 
         while csize > 4:
             in_feat = cndf
             out_feat = cndf * 2
             net.add_module('pyramid-{0}-{1}-conv'.format(in_feat, out_feat),
-                            NextConvolution(in_feat, out_feat, 4, 2, 1))
+                            nn.Conv2d(in_feat, out_feat, 4, 2, 1))
             net.add_module('pyramid-{0}-batchnorm'.format(out_feat),
-                            BatchNorm2d(out_feat))
+                            nn.BatchNorm2d(out_feat))
             net.add_module('pyramid-{0}-relu'.format(out_feat),
-                           PropReLu(inplace=True))
+                           nn.LeakyReLU(0.2, inplace=True))
             cndf = cndf * 2
             csize = csize / 2
 
@@ -95,7 +95,7 @@ class WGANDiscriminatorNet(DiscriminatorNet):
         # state size. K x 4 x 4
         # Global average to single output
         net.add_module('final-{0}-{1}-conv'.format(cndf, 1),
-                        NextConvolution(cndf, 1, 4, 1, 0))
+                        nn.Conv2d(cndf, 1, 4, 1, 0))
         self.net = net
 
 
