@@ -144,7 +144,7 @@ def generator_target(size):
 
 def fake_grad():
     if opt.network == 'WGAN':
-        return torch.Tensor([1])
+        return torch.Tensor([1]) * -1
     else: return None
 
 def real_grad():
@@ -245,6 +245,7 @@ for epoch in range(num_epochs):
             d_loss_fake.backward(fake_grad())
             d_training_loss = d_loss_real - d_loss_fake
 
+
             # Backpropagate and update weights
             # d_training_loss.backward()
             d_optimizer.step()
@@ -298,5 +299,6 @@ for epoch in range(num_epochs):
                 d_training_loss, g_training_loss, d_prediction_real, d_prediction_fake
             )
 
-    torch.save(generator.state_dict(), '%s/generator_epoch_%d.pth' % (opt.netf, epoch))
-    torch.save(discriminator.state_dict(), '%s/discriminator_epoch_%d.pth' % (opt.netf, epoch))
+    if epoch % 25 == 0:
+        torch.save(generator.state_dict(), '%s/generator_epoch_%d.pth' % (opt.netf, epoch))
+        torch.save(discriminator.state_dict(), '%s/discriminator_epoch_%d.pth' % (opt.netf, epoch))
