@@ -226,7 +226,7 @@ for epoch in range(num_epochs):
         # ####### Train Discriminator ########
 
         # train the discriminator Diters times
-        if gen_iterations < 25 or gen_iterations % 500 == 0:
+        if (gen_iterations < 25 or gen_iterations % 500 == 0) and opt.Diters != 1:
             Diters = 100
         else:
             Diters = opt.Diters
