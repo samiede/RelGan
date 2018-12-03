@@ -56,6 +56,16 @@ def load_dataset():
                                   ]
                               )), 1
 
+    elif opt.dataset == 'lsun':
+        out_dir = './dataset/lsun'
+        return datasets.LSUN(root=out_dir, classes=['bedroom_train'],
+                             transform=transforms.Compose([
+                                 transforms.Resize(opt.imageSize),
+                                 transforms.CenterCrop(opt.imageSize),
+                                 transforms.ToTensor(),
+                                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                             ])), 3
+
     elif opt.dataset == 'cifar10':
         out_dir = './dataset/cifar10'
         return datasets.CIFAR10(root=out_dir, download=True, train=True,
@@ -276,7 +286,6 @@ for epoch in range(num_epochs):
             if opt.network == 'WGAN':
                 for p in discriminator.parameters():
                     p.data.clamp_(-0.01, 0.01)
-
 
         # ####### Train Generator ########
         # (2)
