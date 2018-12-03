@@ -73,7 +73,7 @@ def init_discriminator():
         return dd.MNISTDiscriminatorNet(ndf, nc)
 
     elif opt.network == 'WGAN':
-        return dd.WGANDiscriminatorNet(ndf, nc, opt.imageSize )
+        return dd.WGANDiscriminatorNet(ndf, nc, opt.imageSize)
 
     raise ValueError('No valid dataset found in {}'.format(opt.dataset))
 
@@ -94,10 +94,12 @@ def init_optimizer(network):
     else:
         return optim.RMSprop(network.parameters(), lr=0.00005)
 
+
 def init_loss():
     if opt.network == 'WGAN':
-        return lambda input, target : input.mean(0).view(1)
-    else: return nn.BCELoss()
+        return lambda input, target: input.mean(0).view(1)
+    else:
+        return nn.BCELoss()
 
 
 def noise(size):
@@ -145,12 +147,16 @@ def generator_target(size):
 def fake_grad():
     if opt.network == 'WGAN':
         return torch.Tensor([1]) * -1
-    else: return None
+    else:
+        return None
+
 
 def real_grad():
     if opt.network == 'WGAN':
         return torch.Tensor([1])
-    else: return None
+    else:
+        return None
+
 
 def weight_init(m):
     if type(m) == FirstConvolution or type(m) == NextConvolution or type(m) == nn.ConvTranspose2d:
@@ -178,7 +184,6 @@ num_batches = len(data_loader)
 discriminator = init_discriminator().to(gpu)
 generator = init_generator().to(gpu)
 
-
 discriminator.apply(weight_init)
 generator.apply(weight_init)
 
@@ -197,38 +202,53 @@ test_noise = noise(num_test_samples).detach()
 initial_additive_noise_var = 0.1
 add_noise_var = 0.1
 
+# Variable definitions
+n = None
+y_real = None
+d_training_loss = None
+d_prediction_real = None
+d_prediction_fake = None
+d_loss_real = None
+d_loss_fake = None
+
 # How many epochs do we train the model?
-num_epochs = 200
+num_epochs = 25
+gen_iterations = 0
 for epoch in range(num_epochs):
-    for n_batch, (real_batch, _) in enumerate(data_loader):
-        print('Batch', n_batch, end='\r')
-        n = real_batch.size(0)
+    data_iter = iter(data_loader)
+    n_batch = 0
+    while n_batch < num_batches:
+
         add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, 2000)
 
         # ####### Train Discriminator ########
-        #
+        # (1)
         # ####### Train Discriminator ########
 
-        d_training_loss = None
-        d_prediction_real = None
-        d_prediction_fake = None
-        y_real = None
-
-        if(epoch < 25) or epoch % 500 == 0:
+        # train the discriminator Diters times
+        if gen_iterations < 25 or gen_iterations % 500 == 0:
             Diters = 100
         else:
             Diters = opt.Diters
 
-        for i in range(Diters):
+        d = 0
+        while d < Diters and n_batch < len(data_loader):
+            d += 1
+            n_batch += 1
+            data = data_iter.next()
+
+            # train with real
+            x_r, _ = data
+            x_r = x_r.to(gpu)
+            n = x_r.size(0)
 
             discriminator.zero_grad()
-
             y_real = discriminator_target(n).to(gpu)
             y_fake = generator_target(n).to(gpu)
-            x_r = real_batch.to(gpu)
 
             # Add noise to input
             x_rn = added_gaussian(x_r, True, add_noise_var)
+
             # Predict on real data
             d_prediction_real = discriminator(x_rn)
             d_loss_real = loss(d_prediction_real, y_real)
@@ -245,32 +265,32 @@ for epoch in range(num_epochs):
             d_loss_fake.backward(fake_grad())
             d_training_loss = d_loss_real - d_loss_fake
 
-
             # Backpropagate and update weights
             # d_training_loss.backward()
             d_optimizer.step()
 
-            # If training WGAN, clamp the weights after each gradient update
             if opt.network == 'WGAN':
                 for p in discriminator.parameters():
                     p.data.clamp_(-0.01, 0.01)
 
+
         # ####### Train Generator ########
-        #
+        # (2)
         # ####### Train Generator ########
 
         generator.zero_grad()
-
-        # Generate and predict on fake images as if they were real
+        # in case our last batch was the tail batch of the dataloader,
+        # make sure we feed a full batch of noise
         z_ = noise(n).to(gpu)
         x_f = generator(z_)
         x_fn = added_gaussian(x_f, True, add_noise_var)
         g_prediction_fake = discriminator(x_fn)
         g_training_loss = loss(g_prediction_fake, y_real)
 
-        # Backpropagate and update weights
         g_training_loss.backward(real_grad())
         g_optimizer.step()
+
+        gen_iterations += 1
 
         # Log batch error
         logger.log(d_training_loss, g_training_loss, epoch, n_batch, num_batches)
@@ -284,7 +304,7 @@ for epoch in range(num_epochs):
             test_result = discriminator(test_fake)
             # Calculate SA and Relevance
             test_sensitivity = torch.autograd.grad(test_result, test_fake)[0].pow(2)
-            # test_relevance = discriminator.relprop()
+            test_relevance = discriminator.relprop()
             # Add up relevance and sensivity of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
             test_sensitivity = torch.sum(test_sensitivity, 1, keepdim=True)
@@ -299,6 +319,10 @@ for epoch in range(num_epochs):
                 d_training_loss, g_training_loss, d_prediction_real, d_prediction_fake
             )
 
-    if epoch % 25 == 0:
+            print('[%d/%d][%d/%d][%d] Loss_D: %f Loss_G: %f Loss_D_real: %f Loss_D_fake %f'
+                  % (epoch, opt.niter, num_batches, num_epochs, gen_iterations,
+                     d_training_loss.data[0], g_training_loss.data[0], d_loss_real.data[0], d_loss_fake.data[0]))
+
+    if epoch % 5 == 0:
         torch.save(generator.state_dict(), '%s/generator_epoch_%d.pth' % (opt.netf, epoch))
         torch.save(discriminator.state_dict(), '%s/discriminator_epoch_%d.pth' % (opt.netf, epoch))
