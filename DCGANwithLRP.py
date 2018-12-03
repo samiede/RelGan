@@ -221,18 +221,18 @@ for epoch in range(num_epochs):
 
         add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, 2000)
 
-        # ####### Train Discriminator ########
-        # (1)
-        # ####### Train Discriminator ########
-
-        # train the discriminator Diters times
         if (gen_iterations < 25 or gen_iterations % 500 == 0) and opt.Diters != 1:
             Diters = 100
         else:
             Diters = opt.Diters
-
         d = 0
         while d < Diters and n_batch < len(data_loader):
+
+            # ####### Train Discriminator ########
+            # (1)
+            # ####### Train Discriminator ########
+
+            # train the discriminator Diters times
             d += 1
             n_batch += 1
             data = data_iter.next()
@@ -263,7 +263,11 @@ for epoch in range(num_epochs):
             d_prediction_fake = discriminator(x_fn.detach())
             d_loss_fake = loss(d_prediction_fake, y_fake)
             d_loss_fake.backward(fake_grad())
-            d_training_loss = d_loss_real - d_loss_fake
+
+            if opt.network == 'WGAN':
+                d_training_loss = d_loss_real - d_loss_fake
+            else:
+                d_training_loss = d_loss_real + d_loss_fake
 
             # Backpropagate and update weights
             # d_training_loss.backward()
@@ -277,7 +281,6 @@ for epoch in range(num_epochs):
         # ####### Train Generator ########
         # (2)
         # ####### Train Generator ########
-
         generator.zero_grad()
         # in case our last batch was the tail batch of the dataloader,
         # make sure we feed a full batch of noise
@@ -294,6 +297,11 @@ for epoch in range(num_epochs):
 
         # Log batch error
         logger.log(d_training_loss, g_training_loss, epoch, n_batch, num_batches)
+
+        print('[%d/%d][%d/%d][%d] Loss_D: %f Loss_G: %f Loss_D_real: %f Loss_D_fake %f'
+              % (epoch, num_epochs, n_batch, num_batches, gen_iterations,
+                 d_training_loss, g_training_loss, d_loss_real, d_loss_fake))
+
         # Display Progress every few batches
         if n_batch % 100 == 0 or n_batch == num_batches:
             # Create fake with fixed noise
@@ -318,10 +326,6 @@ for epoch in range(num_epochs):
                 epoch, num_epochs, n_batch, num_batches,
                 d_training_loss, g_training_loss, d_prediction_real, d_prediction_fake
             )
-
-            print('[%d/%d][%d/%d][%d] Loss_D: %f Loss_G: %f Loss_D_real: %f Loss_D_fake %f'
-                  % (epoch, opt.niter, num_batches, num_epochs, gen_iterations,
-                     d_training_loss.data[0], g_training_loss.data[0], d_loss_real.data[0], d_loss_fake.data[0]))
 
     if epoch % 5 == 0:
         torch.save(generator.state_dict(), '%s/generator_epoch_%d.pth' % (opt.netf, epoch))
