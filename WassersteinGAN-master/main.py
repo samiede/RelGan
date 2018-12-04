@@ -14,6 +14,7 @@ from torch.autograd import Variable
 import os
 
 import models.dcgan as dcgan
+from DiscriminatorDefinitions import WGANDiscriminatorNet
 import models.mlp as mlp
 
 parser = argparse.ArgumentParser()
