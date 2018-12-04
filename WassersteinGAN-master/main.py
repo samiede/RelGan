@@ -122,7 +122,7 @@ if opt.netG != '': # load checkpoint if needed
 if opt.mlp_D:
     netD = mlp.MLP_D(opt.imageSize, nz, nc, ndf, ngpu)
 else:
-    netD = dd.WGANDiscriminatorNet(opt.imageSize, nz, nc, ndf, ngpu, n_extra_layers)
+    netD = dd.WGANDiscriminatorNet(ndf, nc, opt.imageSize)
     netD.apply(weights_init)
 
 if opt.netD != '':
