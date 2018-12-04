@@ -96,4 +96,13 @@ class WGANDiscriminatorNet(DiscriminatorNet):
                        NextConvolution(cndf, 1, 4, 1, 0))
         self.net = net
 
+        def forward(self, input):
+            if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
+                output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
+            else:
+                output = self.main(input)
+
+            output = output.mean(0)
+            return output.view(1)
+
 
