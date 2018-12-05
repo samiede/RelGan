@@ -12,13 +12,20 @@ from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
 
 class DiscriminatorNet(nn.Module):
 
-    def __init__(self, d, nc):
+    def __init__(self, d, nc, ngpu=1):
         super(DiscriminatorNet, self).__init__()
 
+        self.ngpu = ngpu
         self.net = None
 
     def forward(self, x):
-        return self.net(x).view(-1, 1).squeeze(1)
+
+        if isinstance(x.data, torch.cuda.FloatTensor) and self.ngpu > 1:
+            output = nn.parallel.data_parallel(self.net, x, range(self.ngpu))
+        else:
+            output = self.net(x)
+
+        return output.view(-1, 1).squeeze(1)
 
     def relprop(self):
         return self.net.relprop()
@@ -60,8 +67,8 @@ class MNISTDiscriminatorNet(DiscriminatorNet):
 
 class WGANDiscriminatorNet(DiscriminatorNet):
 
-    def __init__(self, ndf, nc, imageSize, n_extra_layers=0):
-        super(WGANDiscriminatorNet, self).__init__(ndf, nc)
+    def __init__(self, ndf, nc, imageSize, ngpu, n_extra_layers=0):
+        super(WGANDiscriminatorNet, self).__init__(ndf, nc, ngpu)
 
         net = RelevanceNet()
         net.add_module('initial-conv{0}-{1}'.format(nc, ndf),

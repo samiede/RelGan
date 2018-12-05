@@ -3,7 +3,9 @@ import os
 import torch
 from torch import nn, optim
 from torchvision import transforms, datasets
+import torch.backends.cudnn as cudnn
 from utils import Logger
+
 import GeneratorDefinitions as gd
 import DiscriminatorDefinitions as dd
 from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
@@ -14,6 +16,9 @@ parser.add_argument('--dataset', help='MNIST | cifar10, default = MNIST', defaul
 parser.add_argument('--network', help='DCGAN | WGAN, default = DCGAN', default='DCGAN')
 parser.add_argument('--optimizer', help='adam | rmsprop, default adam', default='adam')
 parser.add_argument('--imageSize', help='Size of image', type=int, default=64)
+parser.add_argument('--batchSize', help='Batch size', type=int, default=64)
+parser.add_argument('--ngpu', help='Number of available gpus', type=int, default=1)
+parser.add_argument('--epochs', help='Number of epochs the algorithm runs', type=int, default=25)
 parser.add_argument('--Diters', type=int, default=1, help='number of D iters per each G iter, default = 1')
 parser.add_argument('--netf', default='./Networks', help='Folder to save model checkpoints')
 parser.add_argument('--netG', default='', help="Path to load generator (continue training or application)")
@@ -32,7 +37,7 @@ except OSError:
     pass
 
 # CUDA everything
-
+cudnn.benchmark = True
 gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 torch.set_default_dtype(torch.float32)
 if torch.cuda.is_available():
@@ -83,7 +88,7 @@ def init_discriminator():
         return dd.MNISTDiscriminatorNet(ndf, nc)
 
     elif opt.network == 'WGAN':
-        return dd.WGANDiscriminatorNet(ndf, nc, opt.imageSize)
+        return dd.WGANDiscriminatorNet(ndf, nc, opt.imageSize, ngpu=opt.ngpu)
 
     raise ValueError('No valid dataset found in {}'.format(opt.dataset))
 
@@ -93,7 +98,7 @@ def init_generator():
         return gd.MNISTGeneratorNet(ngf, nc)
 
     elif opt.network == 'WGAN':
-        return gd.WGANGeneratorNet(ngf, nc, opt.imageSize)
+        return gd.WGANGeneratorNet(ngf, nc, opt.imageSize, ngpu=opt.ngpu)
 
     raise ValueError('No valid dataset found in {}'.format(opt.dataset))
 
@@ -169,10 +174,18 @@ def real_grad():
 
 
 def weight_init(m):
-    if type(m) == FirstConvolution or type(m) == NextConvolution or type(m) == nn.ConvTranspose2d:
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
         m.weight.data.normal_(0.0, 0.02)
+    elif classname.find('BatchNorm') != -1:
+        m.weight.data.normal_(1.0, 0.02)
         if m.bias is not None:
-            m.bias.data.zero_()
+            m.bias.data.fill_(0)
+
+    # if type(m) == FirstConvolution or type(m) == NextConvolution or type(m) == nn.ConvTranspose2d:
+    #     m.weight.data.normal_(0.0, 0.02)
+    #     if m.bias is not None:
+    #         m.bias.data.zero_()
     # if type(m) == BatchNorm2d:
     #     m.weight.data.normal_(1.0, 0.02)
     #     m.bias.data.zero_()
@@ -180,12 +193,15 @@ def weight_init(m):
 
 # Create Logger instance
 logger = Logger(model_name='LRPGAN', data_name=opt.dataset)
+print('Created Logger')
 
 dataset, nc = load_dataset()
 
 # Create Data Loader
 # noinspection PyUnresolvedReferences
-data_loader = torch.utils.data.DataLoader(dataset, batch_size=128, shuffle=True)
+data_loader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize, shuffle=True)
+
+print('Initialized Data Loader')
 
 # number of batches
 num_batches = len(data_loader)
@@ -196,6 +212,8 @@ generator = init_generator().to(gpu)
 
 discriminator.apply(weight_init)
 generator.apply(weight_init)
+
+print('Created networks')
 
 d_optimizer = init_optimizer(discriminator)
 g_optimizer = init_optimizer(generator)
@@ -208,7 +226,7 @@ test_noise = noise(num_test_samples).detach()
 
 # Training
 
-# Additive noise to stabilize Training
+# Additive noise to stabilize Training for DCGAN
 initial_additive_noise_var = 0.1
 add_noise_var = 0.1
 
@@ -222,8 +240,10 @@ d_loss_real = None
 d_loss_fake = None
 
 # How many epochs do we train the model?
-num_epochs = 25
+num_epochs = opt.epochs
 gen_iterations = 0
+print('Start of training')
+
 for epoch in range(num_epochs):
     data_iter = iter(data_loader)
     n_batch = 0
@@ -236,13 +256,16 @@ for epoch in range(num_epochs):
         else:
             Diters = opt.Diters
         d = 0
-        while d < Diters and n_batch < len(data_loader):
+        while d < Diters and n_batch < num_batches:
 
             # ####### Train Discriminator ########
             # (1)
             # ####### Train Discriminator ########
 
-            # train the discriminator Diters times
+            for p in discriminator.parameters():
+                p.requires_grad = True
+
+                # train the discriminator Diters times
             d += 1
             n_batch += 1
             data = data_iter.next()
@@ -257,7 +280,10 @@ for epoch in range(num_epochs):
             y_fake = generator_target(n).to(gpu)
 
             # Add noise to input
-            x_rn = added_gaussian(x_r, True, add_noise_var)
+            if opt.network != 'WGAN':
+                x_rn = added_gaussian(x_r, True, add_noise_var)
+            else:
+                x_rn = x_r
 
             # Predict on real data
             d_prediction_real = discriminator(x_rn)
@@ -265,12 +291,18 @@ for epoch in range(num_epochs):
             d_loss_real.backward(real_grad())
 
             # Create and predict on fake data
-            z_ = noise(n).to(gpu)
+            # no grad for speedup
+            with torch.no_grad:
+                z_ = noise(n).to(gpu)
+            # generate fake
             x_f = generator(z_).to(gpu)
-            x_fn = added_gaussian(x_f, True, add_noise_var)
 
-            # Detach so we don't calculate the gradients here (speed up)
-            d_prediction_fake = discriminator(x_fn.detach())
+            if opt.network != 'WGAN':
+                x_fn = added_gaussian(x_f, True, add_noise_var)
+            else:
+                x_fn = x_f
+
+            d_prediction_fake = discriminator(x_fn)
             d_loss_fake = loss(d_prediction_fake, y_fake)
             d_loss_fake.backward(fake_grad())
 
@@ -291,14 +323,14 @@ for epoch in range(num_epochs):
         # (2)
         # ####### Train Generator ########
         generator.zero_grad()
-        # in case our last batch was the tail batch of the dataloader,
-        # make sure we feed a full batch of noise
+        for p in discriminator.parameters():
+            p.requires_grad = False
+
         z_ = noise(n).to(gpu)
         x_f = generator(z_)
         x_fn = added_gaussian(x_f, True, add_noise_var)
         g_prediction_fake = discriminator(x_fn)
         g_training_loss = loss(g_prediction_fake, y_real)
-
         g_training_loss.backward(real_grad())
         g_optimizer.step()
 
