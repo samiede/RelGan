@@ -290,10 +290,10 @@ for epoch in range(num_epochs):
             d_loss_real = loss(d_prediction_real, y_real)
             d_loss_real.backward(real_grad())
 
+            z_ = noise(n).to(gpu)
             # Create and predict on fake data
             # no grad for speedup
             with torch.no_grad:
-                z_ = noise(n).to(gpu)
                 # generate fake
                 x_f = generator(z_).to(gpu)
 
