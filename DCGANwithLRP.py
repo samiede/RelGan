@@ -270,6 +270,10 @@ for epoch in range(num_epochs):
             n_batch += 1
             data = data_iter.next()
 
+            if opt.network == 'WGAN':
+                for p in discriminator.parameters():
+                    p.data.clamp_(-0.01, 0.01)
+
             # train with real
             x_r, _ = data
             x_r = x_r.to(gpu)
