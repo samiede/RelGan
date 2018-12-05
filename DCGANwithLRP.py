@@ -257,6 +257,7 @@ for epoch in range(num_epochs):
             Diters = opt.Diters
         d = 0
         while d < Diters and n_batch < num_batches:
+            print('Discriminator iteration', n_batch, end='\r')
 
             # ####### Train Discriminator ########
             # (1)
