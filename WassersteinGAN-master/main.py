@@ -12,6 +12,8 @@ import torchvision.transforms as transforms
 import torchvision.utils as vutils
 from torch.autograd import Variable
 import os
+from utils import Logger
+
 
 import models.dcgan as dcgan
 import DiscriminatorDefinitions as dd
@@ -149,6 +151,8 @@ else:
     optimizerD = optim.RMSprop(netD.parameters(), lr = opt.lrD)
     optimizerG = optim.RMSprop(netG.parameters(), lr = opt.lrG)
 
+logger = Logger(model_name='LRPGAN', data_name='lsun')
+
 gen_iterations = 0
 for epoch in range(opt.niter):
     data_iter = iter(dataloader)
@@ -220,6 +224,14 @@ for epoch in range(opt.niter):
             % (epoch, opt.niter, i, len(dataloader), gen_iterations,
             errD.data[0], errG.data[0], errD_real.data[0], errD_fake.data[0]))
         if gen_iterations % 500 == 0:
+
+            test_relevance = netG.relprop()
+
+
+            logger.log_images(
+                fake.data, test_relevance, len(fake),
+                epoch, i, len(dataloader)
+            )
             real_cpu = real_cpu.mul(0.5).add(0.5)
             vutils.save_image(real_cpu, '{0}/real_samples.png'.format(opt.experiment))
             fake = netG(Variable(fixed_noise, volatile=True))
