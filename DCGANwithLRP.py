@@ -294,8 +294,8 @@ for epoch in range(num_epochs):
             # no grad for speedup
             with torch.no_grad:
                 z_ = noise(n).to(gpu)
-            # generate fake
-            x_f = generator(z_).to(gpu)
+                # generate fake
+                x_f = generator(z_).to(gpu)
 
             if opt.network != 'WGAN':
                 x_fn = added_gaussian(x_f, True, add_noise_var)
