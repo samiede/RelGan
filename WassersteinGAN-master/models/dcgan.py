@@ -98,7 +98,7 @@ class DCGAN_D1(nn.Module):
         self.main = main
 
     def forward(self, input):
-        
+
         if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
             output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
         else:

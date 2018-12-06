@@ -172,6 +172,7 @@ for epoch in range(opt.niter):
         j = 0
         while j < Diters and i < len(dataloader):
             j += 1
+            print('Discriminator training iteration ', j, end='\r')
 
             # clamp parameters to a cube
             for p in netD.parameters():
