@@ -98,6 +98,9 @@ class DCGAN_D1(nn.Module):
                        NextConvolution(cndf, 1, 4, 1, 0))
         self.main = main
 
+    def setngpu(self, ngpu):
+        self.ngpu = ngpu
+
     def forward(self, input):
 
         if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:

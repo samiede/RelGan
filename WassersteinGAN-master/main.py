@@ -216,7 +216,11 @@ for epoch in range(opt.niter):
         noise.resize_(opt.batchSize, nz, 1, 1).normal_(0, 1)
         noisev = Variable(noise)
         fake = netG(noisev)
+        if gen_iterations % 500 == 0:
+            netD.setngpu(1)
         errG = netD(fake)
+        if gen_iterations % 500 == 0:
+            netD.setngpu(2)
         errG.backward(one)
         optimizerG.step()
         gen_iterations += 1
@@ -224,7 +228,6 @@ for epoch in range(opt.niter):
         print('[%d/%d][%d/%d][%d] Loss_D: %f Loss_G: %f Loss_D_real: %f Loss_D_fake %f'
             % (epoch, opt.niter, i, len(dataloader), gen_iterations,
             errD.data[0], errG.data[0], errD_real.data[0], errD_fake.data[0]))
-
 
         if gen_iterations % 500 == 0:
             test_relevance = netD.relprop()
