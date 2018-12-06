@@ -179,7 +179,7 @@ class NextConvolution(nn.Conv2d):
             pself.bias.data *= 0
             pself.weight.data = pself.weight.data * gamma.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(pself.weight) \
                                 * var.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(pself.weight)
-            pself.weight.data = torch.max(torch.Tensor([1e-9]), pself.weight)
+            pself.weight.data = torch.max(torch.cuda.FloatTensor([1e-9]), pself.weight)
 
             # Negative weights
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
