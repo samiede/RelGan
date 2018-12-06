@@ -158,6 +158,7 @@ class NextConvolution(nn.Conv2d):
         return super().forward(input)
 
     def relprop(self, R):
+        self.cuda()
 
         # Is the layer before Batch Norm?
         if type(R) is tuple:
