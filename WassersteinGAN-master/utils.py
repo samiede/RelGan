@@ -70,6 +70,7 @@ class Logger:
         if torch.cuda.is_available():
             images = images.cuda()
             relevance = relevance.cuda()
+        print('Images', images.shape, 'relevance', relevance.shape)
         images = torch.cat((images, relevance))
 
         # Make horizontal grid from image tensor
