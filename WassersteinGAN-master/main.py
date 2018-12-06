@@ -226,10 +226,10 @@ for epoch in range(opt.niter):
             errD.data[0], errG.data[0], errD_real.data[0], errD_fake.data[0]))
 
         test_relevance = netD.relprop()
-        test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+        test_relevance_p = torch.sum(test_relevance[0], 1, keepdim=True)
 
         logger.log_images(
-            fake[0].data, test_relevance[0], 1,
+            fake[0].data, test_relevance_p, 1,
             epoch, i, len(dataloader)
         )
 
