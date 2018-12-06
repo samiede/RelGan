@@ -166,7 +166,7 @@ for epoch in range(opt.niter):
 
         # train the discriminator Diters times
         if gen_iterations < 25 or gen_iterations % 500 == 0:
-            Diters = 1
+            Diters = 100
         else:
             Diters = opt.Diters
         j = 0
