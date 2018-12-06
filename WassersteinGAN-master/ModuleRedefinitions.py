@@ -173,7 +173,7 @@ class NextConvolution(nn.Conv2d):
 
             # Include positive biases as neurons to normalize over
             pself_biases = copy.deepcopy(pself.bias.data)
-            pself_biases = beta.cuda() + gamma * (pself_biases - mean.cuda()) * gamma
+            pself_biases = beta.cuda() + gamma.cuda() * (pself_biases - mean.cuda()) * gamma.cuda()
             pself.bias.data *= 0
             pself.weight.data = pself.weight.data * gamma.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(pself.weight) \
                                 * var.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(pself.weight)
