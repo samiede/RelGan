@@ -227,6 +227,8 @@ for epoch in range(opt.niter):
 
         test_relevance = netD.relprop()
 
+        print('shapes', fake[0].data.shape, test_relevance[0].shape)
+
         logger.log_images(
             fake[0].data, test_relevance[0], len(fake),
             epoch, i, len(dataloader)
