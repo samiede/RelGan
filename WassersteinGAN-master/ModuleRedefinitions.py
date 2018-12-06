@@ -46,7 +46,7 @@ class FirstConvolution(nn.Conv2d):
             nself.bias.data *= 0
             nself.weight.data = nself.weight.data * gamma.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(nself.weight) \
                                 * var.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(nself.weight)
-            nself.weight.data = torch.min(torch.Tensor(1).zero_(), nself.weight)
+            nself.weight.data = torch.min(torch.cuda.FloatTensor(1).zero_(), nself.weight)
 
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
@@ -57,7 +57,7 @@ class FirstConvolution(nn.Conv2d):
             pself.bias.data *= 0
             pself.weight.data = pself.weight.data * gamma.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(pself.weight) \
                                 * var.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(pself.weight)
-            pself.weight.data = torch.max(torch.Tensor(1).zero_(), pself.weight)
+            pself.weight.data = torch.max(torch.cuda.FloatTensor(1).zero_(), pself.weight)
 
             X = self.X
             L = self.X * 0 + utils.lowest
@@ -65,17 +65,17 @@ class FirstConvolution(nn.Conv2d):
 
             iself_f = iself.forward(X)
             # Expand bias for addition
-            iself_biases = torch.max(torch.Tensor(1).zero_(), iself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+            iself_biases = torch.max(torch.cuda.FloatTensor(1).zero_(), iself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
                 3).expand_as(iself_f)
             iself_f = iself_f + iself_biases
             pself_f = pself.forward(L)
             # Expand bias for addition
-            pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+            pself_biases = torch.max(torch.cuda.FloatTensor(1).zero_(), pself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
                 3).expand_as(pself_f)
             pself_f = pself_f + pself_biases
             nself_f = nself.forward(H)
             # Expand bias for addition
-            nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+            nself_biases = torch.max(torch.cuda.FloatTensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
                 3).expand_as(nself_f)
             nself_f = nself_f + nself_biases
 
@@ -101,14 +101,14 @@ class FirstConvolution(nn.Conv2d):
             # Include positive biases as neurons
             nself_biases = copy.deepcopy(nself.bias.data)
             nself.bias.data *= 0
-            nself.weight.data = torch.min(torch.Tensor(1).zero_(), nself.weight)
+            nself.weight.data = torch.min(torch.cuda.FloatTensor(1).zero_(), nself.weight)
 
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
             # Include positive biases as neurons
             pself_biases = copy.deepcopy(pself.bias.data)
             pself.bias.data *= 0
-            pself.weight.data = torch.max(torch.Tensor(1).zero_(), pself.weight)
+            pself.weight.data = torch.max(torch.cuda.FloatTensor(1).zero_(), pself.weight)
 
             X = self.X
             L = self.X * 0 + utils.lowest
@@ -116,17 +116,17 @@ class FirstConvolution(nn.Conv2d):
 
             iself_f = iself.forward(X)
             # Expand bias for addition
-            iself_biases = torch.max(torch.Tensor(1).zero_(), iself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+            iself_biases = torch.max(torch.cuda.FloatTensor(1).zero_(), iself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
                 3).expand_as(iself_f)
             iself_f = iself_f + iself_biases
             pself_f = pself.forward(L)
             # Expand bias for addition
-            pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+            pself_biases = torch.max(torch.cuda.FloatTensor(1).zero_(), pself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
                 3).expand_as(pself_f)
             pself_f = pself_f + pself_biases
             nself_f = nself.forward(H)
             # Expand bias for addition
-            nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+            nself_biases = torch.max(torch.cuda.FloatTensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
                 3).expand_as(nself_f)
             nself_f = nself_f + nself_biases
 
@@ -221,27 +221,27 @@ class NextConvolution(nn.Conv2d):
             # Include positive biases as neurons
             pself_biases = copy.deepcopy(pself.bias.data)
             pself.bias.data *= 0
-            pself.weight.data = torch.max(torch.Tensor([1e-9]), pself.weight)
+            pself.weight.data = torch.max(torch.cuda.FloatTensor([1e-9]), pself.weight)
 
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
             # Include positive biases as neurons
             nself_biases = copy.deepcopy(pself.bias.data)
             nself.bias.data *= 0
-            nself.weight.data = torch.min(torch.Tensor([-1e-9]), nself.weight)
+            nself.weight.data = torch.min(torch.cuda.FloatTensor([-1e-9]), nself.weight)
 
             X = self.X + 1e-9
 
             ZA = pself(X)
             # expand biases for addition
-            pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+            pself_biases = torch.max(torch.cuda.FloatTensor(1).zero_(), pself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
                 3).expand_as(ZA)
             ZA = ZA + pself_biases
             SA = self.alpha * torch.div(R, ZA)
 
             ZB = nself(X)
             # expand biases for addition HERE NEGATIVE BIASES? torch.min???
-            nself_biases = torch.min(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
+            nself_biases = torch.min(torch.cuda.FloatTensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
                 3).expand_as(ZB)
             ZB = ZB + nself_biases
             SB = - self.beta * torch.div(R, ZB)
@@ -376,7 +376,7 @@ class NextLinear(nn.Linear):
 
 
 
-        V = torch.max(torch.Tensor(1).zero_(), self.weight)
+        V = torch.max(torch.cuda.FloatTensor(1).zero_(), self.weight)
         Z = torch.matmul(self.X, torch.t(V)) + 1e-9
         S = R / Z
         C = torch.matmul(S, V)
