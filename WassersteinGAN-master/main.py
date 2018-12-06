@@ -225,13 +225,13 @@ for epoch in range(opt.niter):
             % (epoch, opt.niter, i, len(dataloader), gen_iterations,
             errD.data[0], errG.data[0], errD_real.data[0], errD_fake.data[0]))
 
-        test_relevance = netG.relprop()
+        test_relevance = netD.relprop()
 
         logger.log_images(
             fake.data, test_relevance, len(fake),
             epoch, i, len(dataloader)
         )
-        
+
         if gen_iterations % 500 == 0:
 
 
