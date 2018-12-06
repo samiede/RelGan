@@ -63,6 +63,7 @@ class DCGAN_D1(nn.Module):
         assert isize % 16 == 0, "isize has to be a multiple of 16"
 
         main = RelevanceNet()
+        main.cuda()
         main.add_module('initial-conv{0}-{1}'.format(nc, ndf),
                        FirstConvolution(nc, ndf, 4, 2, 1))
         main.add_module('initial-relu{0}'.format(ndf),
