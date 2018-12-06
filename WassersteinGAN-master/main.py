@@ -230,7 +230,7 @@ for epoch in range(opt.niter):
         print('shapes', fake[0].data.shape, test_relevance[0].shape)
 
         logger.log_images(
-            fake[0].data, test_relevance[0], len(fake),
+            fake[0].data, test_relevance[0], 1,
             epoch, i, len(dataloader)
         )
 
