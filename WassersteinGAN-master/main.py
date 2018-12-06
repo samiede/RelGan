@@ -227,7 +227,6 @@ for epoch in range(opt.niter):
 
             test_relevance = netG.relprop()
 
-
             logger.log_images(
                 fake.data, test_relevance, len(fake),
                 epoch, i, len(dataloader)
