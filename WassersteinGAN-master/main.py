@@ -227,7 +227,7 @@ for epoch in range(opt.niter):
 
         test_relevance = netD.relprop()
         test_relevance_p = torch.sum(test_relevance[0], 1, keepdim=True)
-
+        print('fake', fake[0].shape, 'rel', test_relevance[0].shape)
         logger.log_images(
             fake[0].data, test_relevance_p, 1,
             epoch, i, len(dataloader)
