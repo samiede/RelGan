@@ -240,7 +240,7 @@ for epoch in range(opt.niter):
             test_relevance_p = torch.sum(test_relevance[0], 0, keepdim=True)
             logger.log_images(
                 fake[0].data.unsqueeze(0), test_relevance_p.unsqueeze(0), 1,
-                epoch, i, len(dataloader)
+                epoch, gen_iterations, len(dataloader)
             )
 
     # do checkpointing

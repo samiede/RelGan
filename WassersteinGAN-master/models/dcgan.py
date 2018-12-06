@@ -83,7 +83,7 @@ class DCGAN_D1(nn.Module):
             in_feat = cndf
             out_feat = cndf * 2
             main.add_module('pyramid-{0}-{1}-conv'.format(in_feat, out_feat),
-                           NextConvolution(in_feat, out_feat, 4, 2, 1))
+                           NextConvolution(in_feat, out_feat, 4, 2, 1, alpha=2.0))
             main.add_module('pyramid-{0}-batchnorm'.format(out_feat),
                            BatchNorm2d(out_feat))
             main.add_module('pyramid-{0}-relu'.format(out_feat),
@@ -95,7 +95,7 @@ class DCGAN_D1(nn.Module):
         # state size. K x 4 x 4
         # Global average to single output
         main.add_module('final-{0}-{1}-conv'.format(cndf, 1),
-                       NextConvolution(cndf, 1, 4, 1, 0))
+                       NextConvolution(cndf, 1, 4, 1, 0, alpha=2.0))
         self.main = main
 
     def setngpu(self, ngpu):
