@@ -230,18 +230,18 @@ for epoch in range(opt.niter):
             errD.data[0], errG.data[0], errD_real.data[0], errD_fake.data[0]))
 
         if gen_iterations % 500 == 0:
+            real_cpu = real_cpu.mul(0.5).add(0.5)
+            vutils.save_image(real_cpu, '{0}/real_samples.png'.format(opt.experiment))
+            fake = netG(Variable(fixed_noise, volatile=True))
+            fake.data = fake.data.mul(0.5).add(0.5)
+            vutils.save_image(fake.data, '{0}/fake_samples_{1}.png'.format(opt.experiment, gen_iterations))
+
             test_relevance = netD.relprop()
             test_relevance_p = torch.sum(test_relevance[0], 0, keepdim=True)
             logger.log_images(
                 fake[0].data.unsqueeze(0), test_relevance_p.unsqueeze(0), 1,
                 epoch, i, len(dataloader)
             )
-
-            real_cpu = real_cpu.mul(0.5).add(0.5)
-            vutils.save_image(real_cpu, '{0}/real_samples.png'.format(opt.experiment))
-            fake = netG(Variable(fixed_noise, volatile=True))
-            fake.data = fake.data.mul(0.5).add(0.5)
-            vutils.save_image(fake.data, '{0}/fake_samples_{1}.png'.format(opt.experiment, gen_iterations))
 
     # do checkpointing
     torch.save(netG.state_dict(), '{0}/netG_epoch_{1}.pth'.format(opt.experiment, epoch))
