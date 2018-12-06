@@ -224,14 +224,17 @@ for epoch in range(opt.niter):
         print('[%d/%d][%d/%d][%d] Loss_D: %f Loss_G: %f Loss_D_real: %f Loss_D_fake %f'
             % (epoch, opt.niter, i, len(dataloader), gen_iterations,
             errD.data[0], errG.data[0], errD_real.data[0], errD_fake.data[0]))
+
+        test_relevance = netG.relprop()
+
+        logger.log_images(
+            fake.data, test_relevance, len(fake),
+            epoch, i, len(dataloader)
+        )
+        
         if gen_iterations % 500 == 0:
 
-            test_relevance = netG.relprop()
 
-            logger.log_images(
-                fake.data, test_relevance, len(fake),
-                epoch, i, len(dataloader)
-            )
             real_cpu = real_cpu.mul(0.5).add(0.5)
             vutils.save_image(real_cpu, '{0}/real_samples.png'.format(opt.experiment))
             fake = netG(Variable(fixed_noise, volatile=True))
