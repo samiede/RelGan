@@ -6,3 +6,4 @@ output_non_conv/
 runs/
 dataset/
 _cache_._dataset_lsun_bedroom_train_lmdb
+WassersteinGAN-master/_cache_._dataset_lsun__bedroom_train_lmdb
