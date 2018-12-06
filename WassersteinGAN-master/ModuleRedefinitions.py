@@ -151,6 +151,8 @@ class NextConvolution(nn.Conv2d):
         self.X = None
         self.alpha = alpha
         self.beta = alpha - 1
+        self.cuda()
+
 
     def forward(self, input):
         # Input shape: minibatch x in_channels, iH x iW
