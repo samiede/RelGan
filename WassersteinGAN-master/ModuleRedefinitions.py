@@ -163,8 +163,8 @@ class NextConvolution(nn.Conv2d):
         if type(R) is tuple:
             R, params = R
 
-            gamma, var, eps, beta, mean = params['gamma'], params['var'], params['eps'], params['beta'], \
-                                          params['mean']
+            gamma, var, eps, beta, mean = params['gamma'].cuda(), params['var'].cuda(), params['eps'].cuda(), params['beta'].cuda(), \
+                                          params['mean'].cuda()
             var = torch.div(torch.cuda.FloatTensor(1).fill_(1), (torch.sqrt(var + eps)))
 
             # Positive weights
@@ -173,7 +173,7 @@ class NextConvolution(nn.Conv2d):
 
             # Include positive biases as neurons to normalize over
             pself_biases = copy.deepcopy(pself.bias.data)
-            pself_biases = beta + gamma * (pself_biases - mean) * gamma
+            pself_biases = beta + gamma * (pself_biases - mean.cuda()) * gamma
             pself.bias.data *= 0
             pself.weight.data = pself.weight.data * gamma.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(pself.weight) \
                                 * var.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(pself.weight)
