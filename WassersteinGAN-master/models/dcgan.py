@@ -107,6 +107,10 @@ class DCGAN_D1(nn.Module):
         output = output.mean(0)
         return output.view(1)
 
+    def relprop(self):
+        return self.main.relprop()
+
+
 
 
 
