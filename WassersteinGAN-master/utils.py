@@ -197,7 +197,7 @@ def visualize(x, colormap):
     x = colormap(x / np.abs(x).max())
 
     # Create a mosaic and upsample
-    x = x.reshape([N, x.shape[2], x.shape[3], 3])
+    x = x.reshape([N, x.shape[2], x.shape[2], 3])
     return x
     # x = np.pad(x, ((0, 0), (0, 0), (2, 2), (2, 2), (0, 0)), 'constant', constant_values=1)
     # x = x.transpose([0, 2, 1, 3, 4]).reshape([1 * 32, N * 32, 3])
