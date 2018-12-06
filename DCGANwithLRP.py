@@ -130,7 +130,7 @@ class DiscriminatorNet(nn.Module):
         return self.net(x).view(-1, 1).squeeze(1)
 
     def relprop(self, R):
-        return self.net.relprop(R)
+        return self.net.relprop()
 
 
 class GeneratorNet(torch.nn.Module):
@@ -267,6 +267,7 @@ for epoch in range(num_epochs):
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
+            print('Test fake', test_fake.shape, 'test_rel', test_relevance.shape)
             logger.log_images(
                 test_fake.data, test_relevance, num_test_samples,
                 epoch, n_batch, num_batches

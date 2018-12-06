@@ -225,15 +225,14 @@ for epoch in range(opt.niter):
             % (epoch, opt.niter, i, len(dataloader), gen_iterations,
             errD.data[0], errG.data[0], errD_real.data[0], errD_fake.data[0]))
 
-        test_relevance = netD.relprop()
-        test_relevance_p = torch.sum(test_relevance[0], 0, keepdim=True)
-        logger.log_images(
-            fake[0].data.unsqueeze(0), test_relevance_p.unsqueeze(0), 1,
-            epoch, i, len(dataloader)
-        )
 
         if gen_iterations % 500 == 0:
-
+            test_relevance = netD.relprop()
+            test_relevance_p = torch.sum(test_relevance[0], 0, keepdim=True)
+            logger.log_images(
+                fake[0].data.unsqueeze(0), test_relevance_p.unsqueeze(0), 1,
+                epoch, i, len(dataloader)
+            )
 
             real_cpu = real_cpu.mul(0.5).add(0.5)
             vutils.save_image(real_cpu, '{0}/real_samples.png'.format(opt.experiment))
