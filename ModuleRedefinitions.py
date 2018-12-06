@@ -26,7 +26,7 @@ class FirstConvolution(nn.Conv2d):
 
             gamma, var, eps, beta, mean = params['gamma'], params['var'], params['eps'], params['beta'], \
                                           params['mean']
-            var = torch.div(torch.cuda.FloatTensor(1).fill_(1), (torch.sqrt(var.cuda() + eps.cuda())))
+            var = torch.div(torch.ones(1), (torch.sqrt(var + eps)))
 
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             iself.load_state_dict(self.state_dict())
@@ -40,7 +40,7 @@ class FirstConvolution(nn.Conv2d):
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
             # Include positive biases as neurons
-            nself_biases = copy.deepcopy(nself.bias.data)x
+            nself_biases = copy.deepcopy(nself.bias.data)
             nself_biases = beta + gamma * (nself_biases - mean) * gamma
             nself.bias.data *= 0
             nself.weight.data = nself.weight.data * gamma.unsqueeze(1).unsqueeze(2).unsqueeze(3).expand_as(nself.weight) \
@@ -165,7 +165,7 @@ class NextConvolution(nn.Conv2d):
 
             gamma, var, eps, beta, mean = params['gamma'], params['var'], params['eps'], params['beta'], \
                                           params['mean']
-            var = torch.div(torch.cuda.FloatTensor(1).fill_(1), (torch.sqrt(var.cuda() + eps.cuda())))
+            var = torch.div(torch.ones(1), (torch.sqrt(var + eps)))
 
             # Positive weights
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)

@@ -26,7 +26,7 @@ class FirstConvolution(nn.Conv2d):
 
             gamma, var, eps, beta, mean = params['gamma'], params['var'], params['eps'], params['beta'], \
                                           params['mean']
-            var = torch.div(torch.ones(1), (torch.sqrt(var + eps)))
+            var = torch.div(torch.cuda.FloatTensor(1).fill_(1), (torch.sqrt(var.cuda() + eps)))
 
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             iself.load_state_dict(self.state_dict())
@@ -165,7 +165,7 @@ class NextConvolution(nn.Conv2d):
 
             gamma, var, eps, beta, mean = params['gamma'], params['var'], params['eps'], params['beta'], \
                                           params['mean']
-            var = torch.div(torch.ones(1), (torch.sqrt(var + eps)))
+            var = torch.div(torch.cuda.FloatTensor(1).fill_(1), (torch.sqrt(var.cuda() + eps.cuda())))
 
             # Positive weights
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
@@ -371,9 +371,7 @@ class NextLinear(nn.Linear):
 
     def relprop(self, R):
 
-        for k, hook in self._forward_pre_hooks.items():
-            if isinstance(hook, WeightNorm) and hook.name == 'weight':
-                remove_weight_norm(self)
+
 
         V = torch.max(torch.Tensor(1).zero_(), self.weight)
         Z = torch.matmul(self.X, torch.t(V)) + 1e-9
