@@ -1,12 +1,6 @@
-import argparse
-import os
 import torch
-from torch import nn, optim
-from torch.nn.utils import weight_norm
-import utils
-from utils import Logger
-from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
-    NextConvolution, FirstConvolution, Pooling, Dropout, BatchNorm2d, ReshapeLayer, FlattenToLinearLayer
+from torch import nn
+from models.ModuleRedefinitions import Layer
 
 
 class MNISTGeneratorNet(torch.nn.Module):
@@ -102,8 +96,8 @@ class WGANGeneratorNet(torch.nn.Module):
         self.main = main
 
     def forward(self, input):
-        # if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
-        #     output = nn.parallel.data_parallel(self.main, input,  range(self.ngpu))
-        # else:
-        output = self.main(input)
+        if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
+            output = nn.parallel.data_parallel(self.main, input,  range(self.ngpu))
+        else:
+            output = self.main(input)
         return output

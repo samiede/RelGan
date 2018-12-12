@@ -1,10 +1,9 @@
 import torch
 from torch import nn, optim
 from torchvision import transforms, datasets
-import utils
 from utils import Logger
-from ModuleRedefinitions import RelevanceNet, Layer, FirstLinear, NextLinear, LastLinear, ReLu as PropReLu, \
-    NextConvolution, FirstConvolution, Pooling, Dropout
+from models.ModuleRedefinitions import RelevanceNet, Layer, LastLinear, ReLu as PropReLu, \
+    NextConvolution, FirstConvolution, Dropout
 
 
 def load_mnist_data():

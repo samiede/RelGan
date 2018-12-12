@@ -1,10 +1,9 @@
 import torch
 from torch import nn, optim
 from torchvision import transforms, datasets
-import utils
 from utils import Logger
-from ModuleRedefinitions import RelevanceNet, Layer, FirstLinear, NextLinear, FlattenLayer, ReLu as PropReLu, \
-    NextConvolution, FirstConvolution, Pooling, Dropout, BatchNorm2d
+from models.ModuleRedefinitions import RelevanceNet, Layer, FlattenLayer, ReLu as PropReLu, \
+    NextConvolution, FirstConvolution, BatchNorm2d
 
 # CUDA everything
 

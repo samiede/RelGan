@@ -1,13 +1,6 @@
-import argparse
-import os
-import torch
-from torch import nn, optim
-from torchvision import transforms, datasets
-from torch.nn.utils import weight_norm
-import utils
-from utils import Logger
-from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
-    NextConvolution, FirstConvolution, Pooling, Dropout, BatchNorm2d, NextLinear
+from torch import nn
+from models.ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
+    NextConvolution, FirstConvolution, BatchNorm2d
 
 
 class DiscriminatorNet(nn.Module):

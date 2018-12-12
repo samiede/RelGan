@@ -6,3 +6,5 @@ output_non_conv/
 runs/
 dataset/
 _cache_._dataset_lsun_bedroom_train_lmdb
+DCGANwithLRP_old.py
+RelGanwithLRP_broken.py
