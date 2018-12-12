@@ -6,10 +6,7 @@ from torchvision import transforms, datasets
 import torch.backends.cudnn as cudnn
 from utils import Logger
 
-import GeneratorDefinitions as gd
-import DiscriminatorDefinitions as dd
-from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
-    NextConvolution, FirstConvolution, Pooling, Dropout, BatchNorm2d
+from models import GeneratorDefinitions as gd, DiscriminatorDefinitions as dd
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', help='MNIST | cifar10, default = MNIST', default='MNIST')
@@ -20,7 +17,7 @@ parser.add_argument('--batchSize', help='Batch size', type=int, default=64)
 parser.add_argument('--ngpu', help='Number of available gpus', type=int, default=1)
 parser.add_argument('--epochs', help='Number of epochs the algorithm runs', type=int, default=25)
 parser.add_argument('--Diters', type=int, default=1, help='number of D iters per each G iter, default = 1')
-parser.add_argument('--netf', default='./Networks', help='Folder to save model checkpoints')
+parser.add_argument('--netf', default='./network', help='Folder to save model checkpoints')
 parser.add_argument('--netG', default='', help="Path to load generator (continue training or application)")
 parser.add_argument('--netD', default='', help="Path to load discriminator (continue training or application)")
 parser.add_argument('--ngf', default=64, type=int, help='Factor of generator filters')
