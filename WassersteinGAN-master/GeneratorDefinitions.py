@@ -55,7 +55,6 @@ class MNISTGeneratorNet(torch.nn.Module):
 
 
 class WGANGeneratorNet(torch.nn.Module):
-
     def __init__(self, ngf, nc, imageSize, input_features=100, n_extra_layers=0, ngpu=1):
         super(WGANGeneratorNet, self).__init__()
         self.ngpu = ngpu
@@ -102,8 +101,8 @@ class WGANGeneratorNet(torch.nn.Module):
         self.main = main
 
     def forward(self, input):
-        # if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
-        #     output = nn.parallel.data_parallel(self.main, input,  range(self.ngpu))
-        # else:
+        if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
+            output = nn.parallel.data_parallel(self.main, input,  range(self.ngpu))
+        else:
         output = self.main(input)
         return output

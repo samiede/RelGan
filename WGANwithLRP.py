@@ -15,9 +15,10 @@ import os
 from utils import Logger
 
 
-import models.dcgan as dcgan
+# import models.dcgan as dcgan
 from models import DiscriminatorDefinitions as dd
-import models.mlp as mlp
+from models import GeneratorDefinitions as gd
+# import models.mlp as mlp
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', required=True, help='cifar10 | lsun | imagenet | folder | lfw ')
@@ -115,7 +116,7 @@ if opt.noBN:
 elif opt.mlp_G:
     netG = mlp.MLP_G(opt.imageSize, nz, nc, ngf, ngpu)
 else:
-    netG = dcgan.DCGAN_G(opt.imageSize, nz, nc, ngf, ngpu, n_extra_layers)
+    netG = gd.WGANGeneratorNet(opt.imageSize, nc, ngf, input_features=nz, n_extra_layers=n_extra_layers, ngpu=ngpu)
 
 netG.apply(weights_init)
 if opt.netG != '': # load checkpoint if needed
@@ -124,7 +125,7 @@ if opt.netG != '': # load checkpoint if needed
 if opt.mlp_D:
     netD = mlp.MLP_D(opt.imageSize, nz, nc, ndf, ngpu)
 else:
-    netD = dcgan.DCGAN_D1(opt.imageSize, nz, nc, ndf, ngpu, n_extra_layers)
+    netD = dd.WGANDiscriminatorNet(opt.imageSize, nc, ndf, ngpu, n_extra_layers)
     netD.apply(weights_init)
 
 if opt.netD != '':

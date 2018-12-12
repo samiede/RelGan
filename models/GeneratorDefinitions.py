@@ -49,8 +49,7 @@ class MNISTGeneratorNet(torch.nn.Module):
 
 
 class WGANGeneratorNet(torch.nn.Module):
-
-    def __init__(self, ngf, nc, imageSize, input_features=100, n_extra_layers=0, ngpu=1):
+    def __init__(self, imageSize, nc, ngf, input_features=100, n_extra_layers=0, ngpu=1):
         super(WGANGeneratorNet, self).__init__()
         self.ngpu = ngpu
         assert imageSize % 16 == 0, "imageSize has to be a multiple of 16"
