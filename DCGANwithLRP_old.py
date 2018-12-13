@@ -4,7 +4,7 @@ import torch
 from torch import nn, optim
 from torchvision import transforms, datasets
 import torch.backends.cudnn as cudnn
-from utils import Logger
+from utils.utils import Logger
 
 from models import GeneratorDefinitions as gd, DiscriminatorDefinitions as dd
 

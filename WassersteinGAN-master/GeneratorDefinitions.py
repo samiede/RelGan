@@ -1,12 +1,6 @@
-import argparse
-import os
 import torch
-from torch import nn, optim
-from torch.nn.utils import weight_norm
-import utils
-from utils import Logger
-from ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
-    NextConvolution, FirstConvolution, Pooling, Dropout, BatchNorm2d, ReshapeLayer, FlattenToLinearLayer
+from torch import nn
+from ModuleRedefinitions import Layer
 
 
 class MNISTGeneratorNet(torch.nn.Module):

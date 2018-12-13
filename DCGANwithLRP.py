@@ -1,10 +1,11 @@
 import argparse
 import os
 import torch
+import utils.ciphar10 as ciphar10
 from torch import nn, optim
 from torchvision import transforms, datasets
 import torch.backends.cudnn as cudnn
-from utils import Logger
+from utils.utils import Logger
 
 from models import GeneratorDefinitions as gd, DiscriminatorDefinitions as dd
 
@@ -70,12 +71,12 @@ def load_dataset():
 
     elif opt.dataset == 'cifar10':
         out_dir = './dataset/cifar10'
-        return datasets.CIFAR10(root=out_dir, download=True, train=True,
+        return ciphar10.CIFAR10(root=out_dir, download=True, train=True,
                                 transform=transforms.Compose([
                                     transforms.Resize(opt.imageSize),
                                     transforms.ToTensor(),
                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                                ])), 3
+                                ]), class_labels=[1, 2]), 3
 
     raise ValueError('No valid dataset found in {}'.format(opt.dataset))
 
@@ -142,6 +143,10 @@ logger = Logger(model_name='LRPGAN', data_name='MNIST')
 print('Created Logger')
 
 dataset, nc = load_dataset()
+
+print(dataset)
+
+exit()
 
 # Create Data Loader
 # noinspection PyUnresolvedReferences

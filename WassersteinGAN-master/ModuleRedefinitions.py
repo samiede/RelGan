@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-import utils
+from utils import utils
 import copy
 
 
