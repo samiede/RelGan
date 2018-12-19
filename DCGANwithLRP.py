@@ -23,6 +23,7 @@ parser.add_argument('--netG', default='', help="Path to load generator (continue
 parser.add_argument('--netD', default='', help="Path to load discriminator (continue training or application)")
 parser.add_argument('--ngf', default=64, type=int, help='Factor of generator filters')
 parser.add_argument('--ndf', default=64, type=int, help='Factor of discriminator filters')
+parser.add_argument('--classlabels', type=int, help='Which classes of cifar do you want to load?', nargs='*', default=None)
 
 opt = parser.parse_args()
 ngf = int(opt.ngf)
@@ -239,8 +240,7 @@ for epoch in range(num_epochs):
             test_relevance = discriminator.relprop()
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
-
-            print('Test fake', test_fake.shape, 'test_rel', test_relevance.shape)
+            # print('Test fake', test_fake.shape, 'test_rel', test_relevance.shape)
             logger.log_images(
                 test_fake.data, test_relevance, num_test_samples,
                 epoch, n_batch, num_batches
