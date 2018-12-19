@@ -140,7 +140,7 @@ def weight_init(m):
 # Network Definitions
 
 # Create Logger instance
-logger = Logger(model_name='LRPGAN', data_name='MNIST')
+logger = Logger(model_name='LRPGAN', data_name=opt.dataset)
 print('Created Logger')
 
 dataset, nc = load_dataset()
