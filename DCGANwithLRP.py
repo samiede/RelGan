@@ -114,7 +114,7 @@ def discriminator_target(size):
     Tensor containing ones, with shape = size
     """
     # noinspection PyUnresolvedReferences
-    return torch.Tensor(size).uniform_(0.9, 1.1)
+    return torch.Tensor(size).uniform_(0.8, 1.0)
 
 
 def generator_target(size):

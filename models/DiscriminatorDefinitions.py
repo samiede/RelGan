@@ -41,22 +41,22 @@ class MNISTDiscriminatorNet(DiscriminatorNet):
                 PropReLu(),
             ),
             Layer(
-                NextConvolution(d, 2 * d, 4, stride=2, padding=1, alpha=2),
+                NextConvolution(d, 2 * d, 4, stride=2, padding=1, alpha=1),
                 BatchNorm2d(2 * d),
                 PropReLu(),
             ),
             Layer(
-                NextConvolution(2 * d, 4 * d, 4, stride=2, padding=1, alpha=2),
+                NextConvolution(2 * d, 4 * d, 4, stride=2, padding=1, alpha=1),
                 BatchNorm2d(4 * d),
                 PropReLu(),
             ),
             Layer(
-                NextConvolution(4 * d, 8 * d, 4, stride=2, padding=1, alpha=2),
+                NextConvolution(4 * d, 8 * d, 4, stride=2, padding=1, alpha=1),
                 BatchNorm2d(8 * d),
                 PropReLu(),
             ),
             Layer(  # Output Layer
-                NextConvolution(8 * d, 1, 4, stride=1, padding=0, alpha=2),
+                NextConvolution(8 * d, 1, 4, stride=1, padding=0, alpha=1),
                 nn.Sigmoid()
             )
         )
