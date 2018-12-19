@@ -145,10 +145,6 @@ print('Created Logger')
 
 dataset, nc = load_dataset()
 
-print(dataset)
-
-exit()
-
 # Create Data Loader
 # noinspection PyUnresolvedReferences
 data_loader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize, shuffle=True)
