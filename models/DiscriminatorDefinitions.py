@@ -13,11 +13,19 @@ class DiscriminatorNet(nn.Module):
         self.net = None
 
     def forward(self, x):
-        output = self.net(x)
+
+        if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
+            output = nn.parallel.data_parallel(self.net, input, range(self.ngpu))
+        else:
+            output = self.main(input)
+        # output = self.net(x)
         return output.view(-1, 1).squeeze(1)
 
     def relprop(self):
         return self.net.relprop()
+
+    def setngpu(self, ngpu):
+        self.ngpu = ngpu
 
 
 class MNISTDiscriminatorNet(DiscriminatorNet):
@@ -33,22 +41,22 @@ class MNISTDiscriminatorNet(DiscriminatorNet):
                 PropReLu(),
             ),
             Layer(
-                NextConvolution(d, 2 * d, 4, stride=2, padding=1),
+                NextConvolution(d, 2 * d, 4, stride=2, padding=1, alpha=2),
                 BatchNorm2d(2 * d),
                 PropReLu(),
             ),
             Layer(
-                NextConvolution(2 * d, 4 * d, 4, stride=2, padding=1),
+                NextConvolution(2 * d, 4 * d, 4, stride=2, padding=1, alpha=2),
                 BatchNorm2d(4 * d),
                 PropReLu(),
             ),
             Layer(
-                NextConvolution(4 * d, 8 * d, 4, stride=2, padding=1),
+                NextConvolution(4 * d, 8 * d, 4, stride=2, padding=1, alpha=2),
                 BatchNorm2d(8 * d),
                 PropReLu(),
             ),
             Layer(  # Output Layer
-                NextConvolution(8 * d, 1, 4, stride=1, padding=0),
+                NextConvolution(8 * d, 1, 4, stride=1, padding=0, alpha=2),
                 nn.Sigmoid()
             )
         )
