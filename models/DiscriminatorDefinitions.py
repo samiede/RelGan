@@ -14,10 +14,10 @@ class DiscriminatorNet(nn.Module):
 
     def forward(self, x):
 
-        if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
-            output = nn.parallel.data_parallel(self.net, input, range(self.ngpu))
+        if isinstance(x.data, torch.cuda.FloatTensor) and self.ngpu > 1:
+            output = nn.parallel.data_parallel(self.net, x, range(self.ngpu))
         else:
-            output = self.main(input)
+            output = self.net(x)
         # output = self.net(x)
         return output.view(-1, 1).squeeze(1)
 

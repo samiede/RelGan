@@ -106,7 +106,7 @@ def added_gaussian(ins, stddev=0.2):
 
 
 def adjust_variance(variance, initial_variance, num_updates):
-    return torch.max(variance - initial_variance / num_updates, 0)
+    return max(variance - initial_variance / num_updates, 0)
 
 
 def discriminator_target(size):
@@ -237,8 +237,12 @@ for epoch in range(num_epochs):
         if n_batch % 100 == 0 or n_batch == num_batches:
 
             test_fake = generator(test_noise)
+            if (opt.ngpu > 1):
+                discriminator.setngpu(1)
             test_result = discriminator(test_fake)
             test_relevance = discriminator.relprop()
+            if (opt.ngpu > 1):
+                discriminator.setngpu(opt.ngpu)
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
             # print('Test fake', test_fake.shape, 'test_rel', test_relevance.shape)
