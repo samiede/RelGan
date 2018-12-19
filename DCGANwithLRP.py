@@ -56,7 +56,7 @@ def load_dataset():
                                   [
                                       transforms.Resize(opt.imageSize),
                                       transforms.ToTensor(),
-                                      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                                      transforms.Normalize((0.5,), (0.5,)),
                                   ]
                               )), 1
 
@@ -99,14 +99,14 @@ def noise(size):
     z = torch.reshape(z, (size, 100, 1, 1))
     return z.to(gpu)
 
-def added_gaussian(ins, is_training, stddev=0.2):
-    if is_training:
+def added_gaussian(ins, stddev=0.2):
+    if stddev > 0:
         return ins + torch.Tensor(torch.randn(ins.size()).to(gpu) * stddev)
     return ins
 
 
 def adjust_variance(variance, initial_variance, num_updates):
-    return variance - initial_variance / num_updates
+    return torch.max(variance - initial_variance / num_updates, 0)
 
 
 def discriminator_target(size):
@@ -192,7 +192,7 @@ for epoch in range(num_epochs):
         x_r = real_batch.to(gpu)
 
         # Add noise to input
-        x_rn = added_gaussian(x_r, True, add_noise_var)
+        x_rn = added_gaussian(x_r, add_noise_var)
         # Predict on real data
         d_prediction_real = discriminator(x_rn)
         d_loss_real = loss(d_prediction_real, y_real)
@@ -200,7 +200,7 @@ for epoch in range(num_epochs):
         # Create and predict on fake data
         z_ = noise(n).to(gpu)
         x_f = generator(z_).to(gpu)
-        x_fn = added_gaussian(x_f, True, add_noise_var)
+        x_fn = added_gaussian(x_f, add_noise_var)
 
         # Detach so we don't calculate the gradients here (speed up)
         d_prediction_fake = discriminator(x_fn.detach())
@@ -218,7 +218,7 @@ for epoch in range(num_epochs):
         # Generate and predict on fake images as if they were real
         z_ = noise(n).to(gpu)
         x_f = generator(z_)
-        x_fn = added_gaussian(x_f, True, add_noise_var)
+        x_fn = added_gaussian(x_f, add_noise_var)
         g_prediction_fake = discriminator(x_fn)
         g_training_loss = loss(g_prediction_fake, y_real)
 
