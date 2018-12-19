@@ -371,10 +371,6 @@ class NextLinear(nn.Linear):
 
     def relprop(self, R):
 
-        for k, hook in self._forward_pre_hooks.items():
-            if isinstance(hook, WeightNorm) and hook.name == 'weight':
-                remove_weight_norm(self)
-
         V = torch.max(torch.Tensor(1).zero_(), self.weight)
         Z = torch.matmul(self.X, torch.t(V)) + 1e-9
         S = R / Z

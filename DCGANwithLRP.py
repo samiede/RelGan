@@ -77,7 +77,7 @@ def load_dataset():
                                     transforms.Resize(opt.imageSize),
                                     transforms.ToTensor(),
                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                                ]), class_labels=[1, 2]), 3
+                                ]), class_labels=opt.classlabels), 3
 
     raise ValueError('No valid dataset found in {}'.format(opt.dataset))
 
@@ -178,11 +178,11 @@ add_noise_var = 0.1
 
 
 num_epochs = opt.epochs
-
 for epoch in range(num_epochs):
     for n_batch, (real_batch, _) in enumerate(data_loader):
         print('Batch', n_batch, end='\r')
         n = real_batch.size(0)
+        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, num_batches * 1/4 * num_epochs)
 
         # Train Discriminator
         discriminator.zero_grad()
@@ -191,16 +191,19 @@ for epoch in range(num_epochs):
         y_fake = generator_target(n).to(gpu)
         x_r = real_batch.to(gpu)
 
+        # Add noise to input
+        x_rn = added_gaussian(x_r, True, add_noise_var)
         # Predict on real data
-        d_prediction_real = discriminator(x_r)
+        d_prediction_real = discriminator(x_rn)
         d_loss_real = loss(d_prediction_real, y_real)
 
         # Create and predict on fake data
         z_ = noise(n).to(gpu)
         x_f = generator(z_).to(gpu)
+        x_fn = added_gaussian(x_f, True, add_noise_var)
 
         # Detach so we don't calculate the gradients here (speed up)
-        d_prediction_fake = discriminator(x_f.detach())
+        d_prediction_fake = discriminator(x_fn.detach())
         d_loss_fake = loss(d_prediction_fake, y_fake)
         d_training_loss = d_loss_real + d_loss_fake
 
@@ -208,13 +211,15 @@ for epoch in range(num_epochs):
         d_training_loss.backward()
         d_optimizer.step()
 
-        # Train Generator
+        # ####### Train Generator ########
+
         generator.zero_grad()
 
         # Generate and predict on fake images as if they were real
         z_ = noise(n).to(gpu)
         x_f = generator(z_)
-        g_prediction_fake = discriminator(x_f)
+        x_fn = added_gaussian(x_f, True, add_noise_var)
+        g_prediction_fake = discriminator(x_fn)
         g_training_loss = loss(g_prediction_fake, y_real)
 
         # Backpropagate and update weights
