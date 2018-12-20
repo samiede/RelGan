@@ -265,6 +265,12 @@ class ReLu(nn.ReLU):
         return R
 
 
+class LeakyReLU(nn.LeakyReLU):
+
+    def relprop(self, R):
+        return R
+
+
 class BatchNorm2d(nn.BatchNorm2d):
 
     def relprop(self, R):
