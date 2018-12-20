@@ -33,6 +33,8 @@ parser.add_argument('--netG', default='', help="path to netG (to continue traini
 parser.add_argument('--netD', default='', help="path to netD (to continue training)")
 parser.add_argument('--outf', default='.', help='folder to output images and model checkpoints')
 parser.add_argument('--manualSeed', type=int, help='manual seed')
+parser.add_argument('--classlabels', type=int, help='Which classes of cifar do you want to load?', nargs='*', default=None)
+
 
 opt = parser.parse_args()
 print(opt)
