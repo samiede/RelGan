@@ -96,16 +96,16 @@ class CIFARDiscriminatorNet(DiscriminatorNet):
 
         net.add_module('sigmoid', nn.Sigmoid())
 
-        self.main = net
+        self.net = net
 
 
 
     def forward(self, input):
 
         if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
-            output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
+            output = nn.parallel.data_parallel(self.net, input, range(self.ngpu))
         else:
-            output = self.main(input)
+            output = self.net(input)
 
         return output.view(-1, 1).squeeze(1)
 

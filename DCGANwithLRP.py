@@ -241,7 +241,9 @@ for epoch in range(num_epochs):
             test_fake = generator(test_noise)
             if (opt.ngpu > 1):
                 discriminator.setngpu(1)
+            discriminator.eval()
             test_result = discriminator(test_fake)
+            discriminator.train()
             test_relevance = discriminator.relprop()
             if (opt.ngpu > 1):
                 discriminator.setngpu(opt.ngpu)

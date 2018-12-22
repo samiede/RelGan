@@ -406,7 +406,7 @@ class FlattenToLinearLayer(nn.Module):
         return input.squeeze(-1).squeeze(-1)
 
     def relprop(self, R):
-        return R.unsqueeze().unsqueeze()
+        return R.unsqueeze(-1).unsqueeze(-1)
 
 
 class Pooling(nn.AvgPool2d):
