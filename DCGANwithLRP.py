@@ -83,10 +83,12 @@ def load_dataset():
 
 # Maybe add more networks
 def init_discriminator():
+    return dd.CIFARDiscriminatorNet(ndf, nc)
     return dd.MNISTDiscriminatorNet(ndf, nc)
 
 
 def init_generator():
+    return gd.CIFARGeneratorNet(ngf, nc)
     return gd.MNISTGeneratorNet(ngf, nc)
 
 def noise(size):
@@ -133,7 +135,7 @@ def weight_init(m):
     if classname.find('Conv') != -1:
         m.weight.data.normal_(0.0, 0.02)
     elif classname.find('BatchNorm') != -1:
-        m.weight.data.normal_(1.0, 0.02)
+        m.weight.data.normal_(0.0, 0.02)
         if m.bias is not None:
             m.bias.data.fill_(0)
 

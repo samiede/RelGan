@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from models.ModuleRedefinitions import Layer
+from models.ModuleRedefinitions import Layer, ReshapeLayer, FlattenToLinearLayer
 
 
 class MNISTGeneratorNet(torch.nn.Module):
@@ -46,6 +46,40 @@ class MNISTGeneratorNet(torch.nn.Module):
 
     def forward(self, x):
         return self.main(x)
+
+
+class CIFARGeneratorNet(torch.nn.Module):
+
+    def __init__(self, ngf, nc, input_features=100):
+        super(CIFARGeneratorNet, self).__init__()
+
+        main = nn.Sequential()
+
+        main.add_module('flatten', FlattenToLinearLayer())
+        main.add_module('project', nn.Linear(input_features, 2 * 2 * 4 * ngf))
+        main.add_module('reshape', ReshapeLayer(4 * ngf, 2, 2))
+        main.add_module('bn0', nn.BatchNorm2d(4 * ngf))
+        main.add_module('leakyReLU0', nn.LeakyReLU(0.2))
+
+        main.add_module('deconv1', nn.ConvTranspose2d(4 * ngf, 2 * ngf, kernel_size=4, stride=2, padding=1))
+        main.add_module('bn1', nn.BatchNorm2d(2 * ngf))
+        main.add_module('leakyReLU1', nn.LeakyReLU(0.2))
+
+        main.add_module('deconv2', nn.ConvTranspose2d(2 * ngf, ngf, kernel_size=4, stride=2, padding=1))
+        main.add_module('bn2', nn.BatchNorm2d(ngf))
+        main.add_module('leakyReLU2', nn.LeakyReLU(0.2))
+
+        main.add_module('deconv3', nn.ConvTranspose2d(ngf, ngf // 2, kernel_size=4, stride=2, padding=1))
+        main.add_module('bn3', nn.BatchNorm2d(ngf // 2))
+        main.add_module('leakyReLU3', nn.LeakyReLU(0.2))
+
+        main.add_module('deconv4', nn.ConvTranspose2d(ngf // 2, nc, kernel_size=4, stride=2, padding=1))
+        main.add_module('tanh', nn.Tanh())
+
+        self.main = main
+
+    def forward(self, input):
+        return self.main(input)
 
 
 class WGANGeneratorNet(torch.nn.Module):
@@ -96,7 +130,7 @@ class WGANGeneratorNet(torch.nn.Module):
 
     def forward(self, input):
         if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
-            output = nn.parallel.data_parallel(self.main, input,  range(self.ngpu))
+            output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
         else:
             output = self.main(input)
         return output

@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from models.ModuleRedefinitions import RelevanceNet, Layer, ReLu as PropReLu, \
-    NextConvolution, FirstConvolution, BatchNorm2d
+    NextConvolution, FirstConvolution, BatchNorm2d, FlattenToLinearLayer, NextLinear
 
 
 class DiscriminatorNet(nn.Module):
@@ -55,11 +55,61 @@ class MNISTDiscriminatorNet(DiscriminatorNet):
                 BatchNorm2d(8 * d),
                 PropReLu(),
             ),
+            Layer( # We take relevance here
+                NextConvolution(8 * d, 1, 4, stride=1, padding=0, alpha=1)
+            ),
             Layer(  # Output Layer
-                NextConvolution(8 * d, 1, 4, stride=1, padding=0, alpha=1),
                 nn.Sigmoid()
             )
         )
+
+
+class CIFARDiscriminatorNet(DiscriminatorNet):
+    def __init__(self, ndf, nc):
+        super(CIFARDiscriminatorNet, self).__init__(ndf, nc)
+
+        self.loss = nn.BCELoss()
+
+        net = RelevanceNet()
+
+        net.add_module('conv0', FirstConvolution(nc, ndf, stride=2, kernel_size=5))
+        net.add_module('relu0', PropReLu())
+
+        net.add_module('conv1', NextConvolution(ndf, ndf * 2, stride=2, kernel_size=5))
+        net.add_module('bn1', BatchNorm2d(ndf * 2))
+        net.add_module('relu1', PropReLu())
+
+        net.add_module('conv2', NextConvolution(ndf * 2, ndf * 4, stride=2, kernel_size=5))
+        net.add_module('bn2', BatchNorm2d(ndf * 4))
+        net.add_module('relu2', PropReLu())
+
+        net.add_module('conv3', NextConvolution(ndf * 4, ndf * 8, stride=2, kernel_size=5))
+        net.add_module('bn3', BatchNorm2d(ndf * 8))
+        net.add_module('relu3', PropReLu())
+
+        net.add_module('conv4', NextConvolution(ndf * 8, ndf * 16, stride=2, kernel_size=5))
+        net.add_module('bn4', BatchNorm2d(ndf * 16))
+        net.add_module('relu4', PropReLu())
+
+        net.add_module('Flatten', FlattenToLinearLayer())
+        net.add_module('lastlinear', NextLinear(ndf * 16, 1))
+
+        net.add_module('sigmoid', nn.Sigmoid())
+
+        self.main = net
+
+
+
+    def forward(self, input):
+
+        if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
+            output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
+        else:
+            output = self.main(input)
+
+        return output.view(-1, 1).squeeze(1)
+
+
 
 
 class WGANDiscriminatorNet(DiscriminatorNet):

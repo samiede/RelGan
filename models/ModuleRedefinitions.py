@@ -405,6 +405,9 @@ class FlattenToLinearLayer(nn.Module):
     def forward(self, input):
         return input.squeeze(-1).squeeze(-1)
 
+    def relprop(self, R):
+        return R.unsqueeze().unsqueeze()
+
 
 class Pooling(nn.AvgPool2d):
 
