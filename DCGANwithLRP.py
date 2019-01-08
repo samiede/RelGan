@@ -9,7 +9,6 @@ from utils.utils import Logger
 
 from models import GeneratorDefinitions as gd, DiscriminatorDefinitions as dd
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', help='MNIST | cifar10, default = MNIST', default='MNIST')
 # parser.add_argument('--network', help='DCGAN | WGAN, default = DCGAN', default='DCGAN')
@@ -23,7 +22,8 @@ parser.add_argument('--netG', default='', help="Path to load generator (continue
 parser.add_argument('--netD', default='', help="Path to load discriminator (continue training or application)")
 parser.add_argument('--ngf', default=64, type=int, help='Factor of generator filters')
 parser.add_argument('--ndf', default=64, type=int, help='Factor of discriminator filters')
-parser.add_argument('--classlabels', type=int, help='Which classes of cifar do you want to load?', nargs='*', default=None)
+parser.add_argument('--classlabels', type=int, help='Which classes of cifar do you want to load?', nargs='*',
+                    default=None)
 
 opt = parser.parse_args()
 ngf = int(opt.ngf)
@@ -35,7 +35,6 @@ try:
 except OSError:
     pass
 
-
 # CUDA everything
 cudnn.benchmark = True
 gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -45,6 +44,7 @@ if torch.cuda.is_available():
 else:
     torch.set_default_tensor_type('torch.FloatTensor')
 print(gpu)
+
 
 # Misc. helper functions
 
@@ -81,15 +81,17 @@ def load_dataset():
 
     raise ValueError('No valid dataset found in {}'.format(opt.dataset))
 
+
 # Maybe add more networks
 def init_discriminator():
-    return dd.CIFARDiscriminatorNet(ndf, nc)
+    # return dd.CIFARDiscriminatorNet(ndf, nc)
     return dd.MNISTDiscriminatorNet(ndf, nc)
 
 
 def init_generator():
-    return gd.CIFARGeneratorNet(ngf, nc)
+    # return gd.CIFARGeneratorNet(ngf, nc)
     return gd.MNISTGeneratorNet(ngf, nc)
+
 
 def noise(size):
     """
@@ -100,6 +102,7 @@ def noise(size):
     # noinspection PyUnresolvedReferences
     z = torch.reshape(z, (size, 100, 1, 1))
     return z.to(gpu)
+
 
 def added_gaussian(ins, stddev=0.2):
     if stddev > 0:
@@ -138,6 +141,7 @@ def weight_init(m):
         m.weight.data.normal_(0.0, 0.02)
         if m.bias is not None:
             m.bias.data.fill_(0)
+
 
 # Network Definitions
 
@@ -178,13 +182,12 @@ test_noise = noise(num_test_samples).detach()
 initial_additive_noise_var = 0.1
 add_noise_var = 0.1
 
-
 num_epochs = opt.epochs
 for epoch in range(num_epochs):
     for n_batch, (real_batch, _) in enumerate(data_loader):
         print('Batch', n_batch, end='\r')
         n = real_batch.size(0)
-        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, num_batches * 1/4 * num_epochs)
+        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, num_batches * 1 / 4 * num_epochs)
 
         # Train Discriminator
         discriminator.zero_grad()
@@ -249,7 +252,8 @@ for epoch in range(num_epochs):
                 discriminator.setngpu(opt.ngpu)
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
-            # print('Test fake', test_fake.shape, 'test_rel', test_relevance.shape)
+            print('Test fake', test_fake.shape, 'test_rel', test_relevance.shape)
+            exit()
             logger.log_images(
                 test_fake.data, test_relevance, num_test_samples,
                 epoch, n_batch, num_batches
@@ -257,4 +261,3 @@ for epoch in range(num_epochs):
 
             status = logger.display_status(epoch, num_epochs, n_batch, num_batches, d_training_loss, g_training_loss,
                                            d_prediction_real, d_prediction_fake)
-            

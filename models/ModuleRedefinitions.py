@@ -317,10 +317,13 @@ class RelevanceNet(nn.Sequential):
 
     def relprop(self):
         R = self.relevanceOutput
+        print(self[-2::-1])
         # For all layers except the last
         for layer in self[-2::-1]:
             R = layer.relprop(R)
         return R
+
+
 
 
 class Layer(nn.Sequential):
