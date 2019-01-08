@@ -83,8 +83,8 @@ def load_dataset():
 
 
 # Maybe add more networks
-def init_discriminator():
-    # return dd.CIFARDiscriminatorNet(ndf, nc)
+def init_discriminator():    # return dd.CIFARDiscriminatorNet(ndf, nc)
+
     return dd.MNISTDiscriminatorNet(ndf, nc)
 
 
