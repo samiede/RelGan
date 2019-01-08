@@ -83,12 +83,12 @@ def load_dataset():
 
 # Maybe add more networks
 def init_discriminator():
-    return dd.CIFARDiscriminatorNet(ndf, nc)
+   # return dd.CIFARDiscriminatorNet(ndf, nc)
     return dd.MNISTDiscriminatorNet(ndf, nc)
 
 
 def init_generator():
-    return gd.CIFARGeneratorNet(ngf, nc)
+   # return gd.CIFARGeneratorNet(ngf, nc)
     return gd.MNISTGeneratorNet(ngf, nc)
 
 def noise(size):
